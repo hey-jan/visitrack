@@ -3,9 +3,24 @@ import { FaUsers, FaBook, FaClock, FaCheck } from 'react-icons/fa';
 
 const Dashboard = () => {
     const registrations = [
-        { name: 'David Brown', course: 'Computer Science', date: '12/17/2025' },
-        { name: 'Emily Williams', course: 'Business Administration', date: '12/14/2025' },
-        { name: 'Michael Johnson', course: 'Engineering', date: '12/15/2025' },
+        { name: 'David Brown', course: 'Bachelor of Science in Computer Science', date: '12/17/2025' },
+        { name: 'Emily Williams', course: 'Bachelor of Science in Business Administration', date: '12/14/2025' },
+        { name: 'Michael Johnson', course: 'Bachelor of Science in Engineering', date: '12/15/2025' },
+        { name: 'Sophia Garcia', course: 'Bachelor of Science in Psychology', date: '12/16/2025' },
+        { name: 'James Miller', course: 'Bachelor of Science in Information Systems', date: '12/18/2025' },
+        { name: 'Olivia Martinez', course: 'Bachelor of Science in Nursing', date: '12/19/2025' },
+        { name: 'Lucas Anderson', course: 'Bachelor of Science in Civil Engineering', date: '12/19/2025' },
+        { name: 'Charlotte Thomas', course: 'Bachelor of Science in Marketing', date: '12/20/2025' },
+        { name: 'Liam Jackson', course: 'Bachelor of Science in Architecture', date: '12/20/2025' },
+        { name: 'Amelia White', course: 'Bachelor of Science in Accountancy', date: '12/21/2025' },
+        { name: 'Ethan Harris', course: 'Bachelor of Science in Biology', date: '12/21/2025' },
+        { name: 'Harper Martin', course: 'Bachelor of Science in Mathematics', date: '12/22/2025' },
+        { name: 'Benjamin Thompson', course: 'Bachelor of Science in Physics', date: '12/22/2025' },
+        { name: 'Evelyn Garcia', course: 'Bachelor of Science in Chemistry', date: '12/23/2025' },
+        { name: 'Alexander Robinson', course: 'Bachelor of Science in Economics', date: '12/23/2025' },
+        { name: 'Mia Clark', course: 'Bachelor of Science in Education', date: '12/24/2025' },
+        { name: 'Daniel Rodriguez', course: 'Bachelor of Science in Criminology', date: '12/24/2025' },
+        { name: 'Ava Lewis', course: 'Bachelor of Science in Hotel Management', date: '12/25/2025' },
     ];
 
     return (

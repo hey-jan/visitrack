@@ -3,10 +3,13 @@
 import React, { useState, useMemo } from 'react';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ConfirmationModal from '../components/ConfirmationModal';
+import EditCourseModal from '../components/EditCourseModal';
 
 const ManageCoursesPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [courseToEdit, setCourseToEdit] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const courses = useMemo(() => [
@@ -66,6 +69,18 @@ const ManageCoursesPage = () => {
     setCourseToDelete(null);
   };
 
+  const handleEditClick = (course: any) => {
+    setCourseToEdit(course);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSave = (updatedCourse: any) => {
+    console.log('Updating course:', updatedCourse);
+    // Here you would typically make an API call to update the course
+    setIsEditModalOpen(false);
+    setCourseToEdit(null);
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -114,7 +129,10 @@ const ManageCoursesPage = () => {
                 <td className="py-4 text-gray-500">{course.units}</td>
                 <td className="py-4">
                   <div className="flex gap-4">
-                    <button className="text-gray-500 hover:text-gray-800">
+                    <button 
+                      onClick={() => handleEditClick(course)}
+                      className="text-gray-500 hover:text-gray-800"
+                    >
                       <FaEdit />
                     </button>
                     <button
@@ -137,6 +155,13 @@ const ManageCoursesPage = () => {
         onConfirm={handleDeleteConfirm}
         title="Delete Course"
         message={`Are you sure you want to delete the course ${courseToDelete?.courseNo}?`}
+      />
+
+      <EditCourseModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleEditSave}
+        course={courseToEdit}
       />
     </div>
   );
