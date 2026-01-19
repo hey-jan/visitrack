@@ -78,17 +78,17 @@ const ManageStudentsPage = () => {
 
       <div className="bg-white p-6 rounded-xl shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <div className="relative w-full max-w-md">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search students..."
-              className="w-full bg-gray-100 border-none rounded-lg pl-12 pr-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search students..."
+                className="w-96 bg-gray-100 border-none rounded-lg pl-12 pr-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
             <div className="relative">
               <select 
                 className="bg-gray-100 border-none rounded-lg pl-4 pr-10 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300 appearance-none"
@@ -112,14 +112,14 @@ const ManageStudentsPage = () => {
                 />
               </svg>
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
-            >
-              <FaPlus />
-              Add Student
-            </button>
           </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-black text-white px-8 py-3 rounded-lg flex items-center gap-1"
+          >
+            <FaPlus />
+            Add Student
+          </button>
         </div>
 
         <table className="w-full">

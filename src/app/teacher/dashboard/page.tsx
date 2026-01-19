@@ -1,9 +1,17 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaCalendarAlt } from 'react-icons/fa';
 
 const DashboardPage = () => {
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    setCurrentDate(today.toLocaleDateString('en-US', options));
+  }, []);
+
   const todaysClasses = [
     {
       name: 'CS-PRACT41',
@@ -60,7 +68,7 @@ const DashboardPage = () => {
         <h1 className="text-4xl font-bold">Dashboard</h1>
         <div className="flex items-center text-lg">
           <FaCalendarAlt className="mr-2" />
-          <span>Wednesday, December 17, 2025</span>
+          <span>{currentDate}</span>
         </div>
       </div>
 

@@ -35,20 +35,22 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose }) =>
                   className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="mb-6">
                 <input
                   type="text"
                   placeholder="Course"
                   className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <input
                   type="text"
-                  placeholder="Section"
+                  placeholder="Year"
                   className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 />
                 <input
                   type="text"
-                  placeholder="Year"
+                  placeholder="Section"
                   className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 />
               </div>

@@ -1,95 +1,160 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FaUserCircle, FaBell, FaLock, FaSignOutAlt } from 'react-icons/fa';
-
-// A reusable toggle switch component
-const ToggleSwitch = ({ label, enabled, setEnabled }) => (
-  <div className="flex items-center justify-between py-2">
-    <span className="text-gray-700">{label}</span>
-    <button
-      onClick={() => setEnabled(!enabled)}
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 focus:outline-none ${
-        enabled ? 'bg-black' : 'bg-gray-300'
-      }`}
-    >
-      <span
-        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ${
-          enabled ? 'translate-x-6' : 'translate-x-1'
-        }`}
-      />
-    </button>
-  </div>
-);
-
+import React from 'react';
 
 const SettingsPage = () => {
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
-
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-8">Settings</h1>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-500">Manage your account settings and preferences</p>
+      </div>
 
       <div className="space-y-8">
-        {/* Profile Information Section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4 flex items-center">
-            <FaUserCircle className="mr-3" /> Profile Information
-          </h2>
+        {/* Profile Settings */}
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Profile Information</h2>
+          <form className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-gray-700 mb-2">First Name</label>
+                <input
+                  type="text"
+                  defaultValue="Maria"
+                  className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-2">Last Name</label>
+                <input
+                  type="text"
+                  defaultValue="Santos"
+                  className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Email Address</label>
+              <input
+                type="email"
+                defaultValue="maria.santos@university.edu"
+                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+              />
+            </div>
+            <div className="text-right">
+              <button
+                type="submit"
+                className="bg-black text-white px-6 py-3 rounded-lg"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Change Password */}
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Change Password</h2>
+          <form className="space-y-6">
+            <div>
+              <label className="block text-gray-700 mb-2">Current Password</label>
+              <input
+                type="password"
+                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">New Password</label>
+              <input
+                type="password"
+                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Confirm New Password</label>
+              <input
+                type="password"
+                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+              />
+            </div>
+            <div className="text-right">
+              <button
+                type="submit"
+                className="bg-black text-white px-6 py-3 rounded-lg"
+              >
+                Update Password
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Notifications</h2>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Name</label>
-              <p className="mt-1 text-lg">Prof. Maria Santos</p>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-700">Absence Alerts (Email)</p>
+              <label className="switch">
+                <input type="checkbox" defaultChecked />
+                <span className="slider round"></span>
+              </label>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Email</label>
-              <p className="mt-1 text-lg">maria.santos@university.edu</p>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-700">Class Reminders (Push)</p>
+              <label className="switch">
+                <input type="checkbox" />
+                <span className="slider round"></span>
+              </label>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Teacher ID</label>
-              <p className="mt-1 text-lg">TCH-11965</p>
-            </div>
-             <button className="bg-gray-200 text-black px-4 py-2 rounded-lg mt-2">
-              Edit Profile
-            </button>
-          </div>
-        </div>
-
-        {/* Notification Settings Section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4 flex items-center">
-            <FaBell className="mr-3" /> Notifications
-          </h2>
-          <div className="space-y-2">
-            <ToggleSwitch 
-              label="Absence Alerts (Email)"
-              enabled={emailNotifications}
-              setEnabled={setEmailNotifications}
-            />
-            <ToggleSwitch 
-              label="Class Reminders (Push)"
-              enabled={pushNotifications}
-              setEnabled={setPushNotifications}
-            />
-          </div>
-        </div>
-
-        {/* Account & Security Section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4 flex items-center">
-            <FaLock className="mr-3" /> Account & Security
-          </h2>
-          <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-            <button className="bg-black text-white px-4 py-2 rounded-lg flex items-center justify-center">
-              <FaLock className="mr-2" /> Change Password
-            </button>
-            <button className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center justify-center">
-              <FaSignOutAlt className="mr-2" /> Log Out
-            </button>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 60px;
+          height: 34px;
+        }
+        .switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          transition: 0.4s;
+        }
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 26px;
+          width: 26px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: 0.4s;
+        }
+        input:checked + .slider {
+          background-color: #212121;
+        }
+        input:checked + .slider:before {
+          transform: translateX(26px);
+        }
+        .slider.round {
+          border-radius: 34px;
+        }
+        .slider.round:before {
+          border-radius: 50%;
+        }
+      `}</style>
     </div>
   );
 };
