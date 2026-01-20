@@ -74,20 +74,23 @@ const DashboardPage = () => {
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-4">Today's Classes</h2>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {todaysClasses.map((course, index) => (
             <div
               key={index}
-              className="flex justify-between items-center p-4 border border-gray-200 rounded-lg"
+              className="bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col justify-between"
             >
               <div>
-                <h3 className="text-xl font-bold">{course.name}</h3>
+                <h3 className="text-xl font-bold mb-2">{course.name}</h3>
                 <p className="text-gray-600">
-                  {course.room} Schedule: {course.schedule}
+                  {course.room}
+                </p>
+                <p className="text-gray-600 mb-4">
+                  Schedule: {course.schedule}
                 </p>
               </div>
               <Link href={`/teacher/my-classes/${course.name.toLowerCase()}`}>
-                <div className="bg-black text-white px-4 py-2 rounded-lg">
+                <div className="bg-black text-white text-center px-4 py-2 rounded-lg">
                   View Attendance
                 </div>
               </Link>

@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaArrowLeft, FaCalendarAlt, FaFilter, FaSearch } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaFilter, FaSearch, FaUser, FaFilePdf, FaFileExcel } from 'react-icons/fa';
+import { attendanceData } from '@/data/attendanceData';
+import * as XLSX from 'xlsx';
 
 const AttendancePage = () => {
   const router = useRouter();
@@ -12,6 +14,8 @@ const AttendancePage = () => {
 
   const selectedDate = 'Dec 17, 2025'; // Static for now
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStudentForExport, setSelectedStudentForExport] = useState('All');
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
 
   // Mock data - in a real app, you would fetch this based on classId
   const classDetails = {
@@ -20,133 +24,106 @@ const AttendancePage = () => {
     room: 'Rm 301',
     schedule: '11965',
   };
-
-  const attendanceData = {
-    'Dec 17, 2025': [
-      { name: 'John Dela Cruz', status: 'Present', time: '08:02 AM' },
-      { name: 'Maria Garcia', status: 'Present', time: '08:03 AM' },
-      { name: 'Pedro Reyes', status: 'Absent', time: '-' },
-      { name: 'Ana Santos', status: 'Present', time: '08:05 AM' },
-      { name: 'Jose Mendoza', status: 'Late', time: '08:15 AM' },
-      { name: 'Sophia Turner', status: 'Present', time: '08:06 AM' },
-      { name: 'Oliver Wilson', status: 'Present', time: '08:07 AM' },
-      { name: 'Isabella Moore', status: 'Absent', time: '-' },
-      { name: 'Lucas Taylor', status: 'Late', time: '08:20 AM' },
-      { name: 'Mia Davis', status: 'Present', time: '08:09 AM' },
-      { name: 'Ethan White', status: 'Present', time: '08:10 AM' },
-      { name: 'Amelia Harris', status: 'Absent', time: '-' },
-      { name: 'Jackson Clark', status: 'Present', time: '08:12 AM' },
-      { name: 'Harper Lewis', status: 'Late', time: '08:25 AM' },
-      { name: 'Evelyn Young', status: 'Present', time: '08:14 AM' },
-    ],
-    'Dec 16, 2025': [
-       { name: 'John Dela Cruz', status: 'Present', time: '08:00 AM' },
-       { name: 'Maria Garcia', status: 'Present', time: '08:01 AM' },
-       { name: 'Pedro Reyes', status: 'Present', time: '08:04 AM' },
-       { name: 'Ana Santos', status: 'Present', time: '08:05 AM' },
-       { name: 'Jose Mendoza', status: 'Present', time: '08:06 AM' },
-       { name: 'Sophia Turner', status: 'Present', time: '08:07 AM' },
-       { name: 'Oliver Wilson', status: 'Present', time: '08:08 AM' },
-       { name: 'Isabella Moore', status: 'Present', time: '08:09 AM' },
-       { name: 'Lucas Taylor', status: 'Present', time: '08:10 AM' },
-       { name: 'Mia Davis', status: 'Present', time: '08:11 AM' },
-       { name: 'Ethan White', status: 'Present', time: '08:12 AM' },
-       { name: 'Amelia Harris', status: 'Present', time: '08:13 AM' },
-       { name: 'Jackson Clark', status: 'Present', time: '08:14 AM' },
-       { name: 'Harper Lewis', status: 'Present', time: '08:15 AM' },
-       { name: 'Evelyn Young', status: 'Present', time: '08:16 AM' },
-    ],
-    'Dec 11, 2025': [
-      { name: 'John Dela Cruz', status: 'Present', time: '08:01 AM' },
-      { name: 'Maria Garcia', status: 'Absent', time: '-' },
-      { name: 'Pedro Reyes', status: 'Present', time: '08:03 AM' },
-      { name: 'Ana Santos', status: 'Present', time: '08:04 AM' },
-      { name: 'Jose Mendoza', status: 'Present', time: '08:05 AM' },
-      { name: 'Sophia Turner', status: 'Late', time: '08:10 AM' },
-      { name: 'Oliver Wilson', status: 'Present', time: '08:07 AM' },
-      { name: 'Isabella Moore', status: 'Present', time: '08:08 AM' },
-      { name: 'Lucas Taylor', status: 'Absent', time: '-' },
-      { name: 'Mia Davis', status: 'Present', time: '08:09 AM' },
-      { name: 'Ethan White', status: 'Present', time: '08:10 AM' },
-      { name: 'Amelia Harris', status: 'Present', time: '08:11 AM' },
-      { name: 'Jackson Clark', status: 'Present', time: '08:12 AM' },
-      { name: 'Harper Lewis', status: 'Absent', time: '-' },
-      { name: 'Evelyn Young', status: 'Present', time: '08:13 AM' },
-    ],
-    'Dec 10, 2025': [
-      { name: 'John Dela Cruz', status: 'Present', time: '08:00 AM' },
-      { name: 'Maria Garcia', status: 'Present', time: '08:01 AM' },
-      { name: 'Pedro Reyes', status: 'Present', time: '08:02 AM' },
-      { name: 'Ana Santos', status: 'Late', time: '08:10 AM' },
-      { name: 'Jose Mendoza', status: 'Present', time: '08:03 AM' },
-      { name: 'Sophia Turner', status: 'Present', time: '08:04 AM' },
-      { name: 'Oliver Wilson', status: 'Absent', time: '-' },
-      { name: 'Isabella Moore', status: 'Present', time: '08:05 AM' },
-      { name: 'Lucas Taylor', status: 'Present', time: '08:06 AM' },
-      { name: 'Mia Davis', status: 'Present', time: '08:07 AM' },
-      { name: 'Ethan White', status: 'Present', time: '08:08 AM' },
-      { name: 'Amelia Harris', status: 'Late', time: '08:15 AM' },
-      { name: 'Jackson Clark', status: 'Present', time: '08:09 AM' },
-      { name: 'Harper Lewis', status: 'Present', time: '08:10 AM' },
-      { name: 'Evelyn Young', status: 'Present', time: '08:11 AM' },
-    ],
-    'Dec 09, 2025': [
-      { name: 'John Dela Cruz', status: 'Absent', time: '-' },
-      { name: 'Maria Garcia', status: 'Present', time: '08:02 AM' },
-      { name: 'Pedro Reyes', status: 'Present', time: '08:03 AM' },
-      { name: 'Ana Santos', status: 'Present', time: '08:04 AM' },
-      { name: 'Jose Mendoza', status: 'Late', time: '08:10 AM' },
-      { name: 'Sophia Turner', status: 'Present', time: '08:05 AM' },
-      { name: 'Oliver Wilson', status: 'Present', time: '08:06 AM' },
-      { name: 'Isabella Moore', status: 'Present', time: '08:07 AM' },
-      { name: 'Lucas Taylor', status: 'Present', time: '08:08 AM' },
-      { name: 'Mia Davis', status: 'Absent', time: '-' },
-      { name: 'Ethan White', status: 'Present', time: '08:09 AM' },
-      { name: 'Amelia Harris', status: 'Present', time: '08:10 AM' },
-      { name: 'Jackson Clark', status: 'Late', time: '08:15 AM' },
-      { name: 'Harper Lewis', status: 'Present', time: '08:11 AM' },
-      { name: 'Evelyn Young', status: 'Present', time: '08:12 AM' },
-    ],
-    'Dec 08, 2025': [
-      { name: 'John Dela Cruz', status: 'Present', time: '08:00 AM' },
-      { name: 'Maria Garcia', status: 'Present', time: '08:01 AM' },
-      { name: 'Pedro Reyes', status: 'Late', time: '08:10 AM' },
-      { name: 'Ana Santos', status: 'Present', time: '08:02 AM' },
-      { name: 'Jose Mendoza', status: 'Present', time: '08:03 AM' },
-      { name: 'Sophia Turner', status: 'Present', time: '08:04 AM' },
-      { name: 'Oliver Wilson', status: 'Absent', time: '-' },
-      { name: 'Isabella Moore', status: 'Present', time: '08:05 AM' },
-      { name: 'Lucas Taylor', status: 'Present', time: '08:06 AM' },
-      { name: 'Mia Davis', status: 'Present', time: '08:07 AM' },
-      { name: 'Ethan White', status: 'Late', time: '08:12 AM' },
-      { name: 'Amelia Harris', status: 'Present', time: '08:08 AM' },
-      { name: 'Jackson Clark', status: 'Present', time: '08:09 AM' },
-      { name: 'Harper Lewis', status: 'Present', time: '08:10 AM' },
-      { name: 'Evelyn Young', status: 'Present', time: '08:11 AM' },
-    ],
-    'Dec 07, 2025': [
-      { name: 'John Dela Cruz', status: 'Present', time: '08:01 AM' },
-      { name: 'Maria Garcia', status: 'Present', time: '08:02 AM' },
-      { name: 'Pedro Reyes', status: 'Absent', time: '-' },
-      { name: 'Ana Santos', status: 'Present', time: '08:03 AM' },
-      { name: 'Jose Mendoza', status: 'Present', time: '08:04 AM' },
-      { name: 'Sophia Turner', status: 'Late', time: '08:10 AM' },
-      { name: 'Oliver Wilson', status: 'Present', time: '08:05 AM' },
-      { name: 'Isabella Moore', status: 'Present', time: '08:06 AM' },
-      { name: 'Lucas Taylor', status: 'Present', time: '08:07 AM' },
-      { name: 'Mia Davis', status: 'Absent', time: '-' },
-      { name: 'Ethan White', status: 'Present', time: '08:08 AM' },
-      { name: 'Amelia Harris', status: 'Present', time: '08:09 AM' },
-      { name: 'Jackson Clark', status: 'Present', time: '08:10 AM' },
-      { name: 'Harper Lewis', status: 'Present', time: '08:11 AM' },
-      { name: 'Evelyn Young', status: 'Late', time: '08:15 AM' },
-    ],
-    // ... more dates
-  };
   
-  const students = (attendanceData[selectedDate] || []).filter((student) =>
-    student.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const allStudentsList = Array.from(new Set(Object.values(attendanceData).flat().map(s => s.name)));
+
+  const students = (attendanceData[selectedDate] || [])
+    .filter((student) =>
+      student.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handleExportExcel = () => {
+      const allDates = Object.keys(attendanceData).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      const workbook = XLSX.utils.book_new();
+  
+      if (selectedStudentForExport !== 'All') {
+        const studentName = selectedStudentForExport;
+        const studentDataRows = allDates.map(date => {
+          const studentRecord = attendanceData[date]?.find(s => s.name === studentName);
+          return {
+            'Date': new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
+            'Status': studentRecord ? studentRecord.status : 'Absent',
+            'Time': studentRecord ? studentRecord.time : 'N/A'
+          };
+        });
+  
+        const worksheet = XLSX.utils.json_to_sheet(studentDataRows);
+        const headerRange = XLSX.utils.decode_range(worksheet['!ref'] as string);
+        for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
+          const cellAddress = XLSX.utils.encode_cell({ r: headerRange.s.r, c: C });
+          const cell = worksheet[cellAddress];
+          if (cell) {
+            cell.s = {
+              fill: { fgColor: { rgb: "000000" } },
+              font: { color: { rgb: "FFFFFF" }, bold: true },
+            };
+          }
+        }
+  
+        XLSX.utils.book_append_sheet(workbook, worksheet, `${studentName} Attendance`);
+        XLSX.writeFile(workbook, `${classId.toUpperCase()}_${studentName}_Attendance.xlsx`);
+      } else {
+        // Existing logic for "All" students
+        const summaryRows = allStudentsList.map(studentName => {
+          let presentCount = 0;
+          let absentCount = 0;
+          allDates.forEach(date => {
+            const studentData = attendanceData[date]?.find(s => s.name === studentName);
+            if (studentData && (studentData.status === 'Present' || studentData.status === 'Late')) {
+              presentCount++;
+            } else {
+              absentCount++;
+            }
+          });
+          return { 'Student Name': studentName, 'Present': presentCount, 'Absent': absentCount };
+        });
+  
+        const summaryWorksheet = XLSX.utils.aoa_to_sheet([
+          ['Subject:', classDetails.name],
+          ['Total Class Days:', allDates.length],
+          [],
+        ]);
+        XLSX.utils.sheet_add_json(summaryWorksheet, summaryRows, { origin: 'A4' });
+        const summaryHeaderRange = { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } };
+        for (let C = summaryHeaderRange.s.c; C <= summaryHeaderRange.e.c; ++C) {
+          const cellAddress = XLSX.utils.encode_cell({ r: summaryHeaderRange.s.r, c: C });
+          const cell = summaryWorksheet[cellAddress];
+          if (cell) {
+            cell.s = { fill: { fgColor: { rgb: "000000" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+          }
+        }
+        XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
+  
+        const months = [...new Set(allDates.map(date => new Date(date).toLocaleString('en-US', { month: 'long', year: 'numeric' })))];
+        months.forEach(month => {
+          const datesInMonth = allDates.filter(date => new Date(date).toLocaleString('en-US', { month: 'long', year: 'numeric' }) === month);
+          const headerDatesFormatted = datesInMonth.map(date => new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }));
+          
+          const rows = allStudentsList.map(studentName => {
+            const row: { [key: string]: string } = { 'Student Name': studentName };
+            datesInMonth.forEach(date => {
+              const formattedDate = new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+              const studentData = attendanceData[date]?.find(s => s.name === studentName);
+              row[formattedDate] = studentData ? studentData.status : 'Absent';
+            });
+            return row;
+          });
+  
+          const worksheet = XLSX.utils.json_to_sheet(rows);
+          const headerRange = XLSX.utils.decode_range(worksheet['!ref'] as string);
+          for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
+            const cellAddress = XLSX.utils.encode_cell({ r: headerRange.s.r, c: C });
+            const cell = worksheet[cellAddress];
+            if (cell) {
+              cell.s = { fill: { fgColor: { rgb: "000000" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+            }
+          }
+          XLSX.utils.book_append_sheet(workbook, worksheet, month);
+        });
+  
+        XLSX.writeFile(workbook, `${classId.toUpperCase()}_Attendance.xlsx`);
+      }
+    };
 
   return (
     <div>
@@ -161,6 +138,65 @@ const AttendancePage = () => {
         <p className="text-gray-600">
           Room: {classDetails.room}  Schedule: {classDetails.schedule}
         </p>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex justify-end gap-4 mb-6">
+        <button
+          onClick={() => console.log('Filter by Date clicked')}
+          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+        >
+          <FaCalendarAlt />
+          Filter by Date
+        </button>
+        <div className="relative">
+          <button
+            onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
+            className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+          >
+            <FaUser />
+            {selectedStudentForExport === 'All' ? 'Filter by Student' : selectedStudentForExport}
+          </button>
+          {isStudentDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg">
+              <button
+                onClick={() => {
+                  setSelectedStudentForExport('All');
+                  setIsStudentDropdownOpen(false);
+                }}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                All Students
+              </button>
+              {allStudentsList.map(studentName => (
+                <button
+                  key={studentName}
+                  onClick={() => {
+                    setSelectedStudentForExport(studentName);
+                    setIsStudentDropdownOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  {studentName}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => console.log('Export PDF clicked')}
+          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+        >
+          <FaFilePdf />
+          Export PDF
+        </button>
+        <button
+          onClick={handleExportExcel}
+          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+        >
+          <FaFileExcel />
+          Export Excel
+        </button>
       </div>
 
       {/* Summary Cards */}
@@ -196,7 +232,7 @@ const AttendancePage = () => {
            <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold">Attendance for {selectedDate}</h2>
                     <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
                         <input
                             type="text"
                             placeholder="Search student..."

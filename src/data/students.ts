@@ -1,0 +1,17 @@
+export const students = [
+  { name: 'John Doe', course: 'Bachelor of Science in Computer Science', year: 3, section: 'A' },
+  { name: 'Jane Smith', course: 'Bachelor of Science in Information Technology', year: 2, section: 'B' },
+  { name: 'Michael Johnson', course: 'Bachelor of Science in Engineering', year: 4, section: 'A' },
+  { name: 'Emily Williams', course: 'Bachelor of Science in Business Administration', year: 1, section: 'C' },
+  { name: 'David Brown', course: 'Bachelor of Science in Computer Science', year: 3, section: 'B' },
+  { name: 'Sarah Lee', course: 'Bachelor of Science in Information Technology', year: 2, section: 'A' },
+  { name: 'Kevin Green', course: 'Bachelor of Science in Engineering', year: 3, section: 'C' },
+  { name: 'Anna White', course: 'Bachelor of Science in Business Administration', year: 4, section: 'B' },
+  { name: 'Peter Black', course: 'Bachelor of Science in Computer Science', year: 1, section: 'A' },
+  { name: 'Laura Hall', course: 'Bachelor of Science in Information Technology', year: 3, section: 'B' },
+  { name: 'James Clark', course: 'Bachelor of Science in Engineering', year: 2, section: 'A' },
+  { name: 'Olivia King', course: 'Bachelor of Science in Business Administration', year: 3, section: 'C' },
+  { name: 'William Scott', course: 'Bachelor of Science in Computer Science', year: 4, section: 'B' },
+  { name: 'Sophia Adams', course: 'Bachelor of Science in Information Technology', year: 1, section: 'A' },
+  { name: 'Daniel Baker', course: 'Bachelor of Science in Engineering', year: 3, section: 'A' },
+];
