@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaArrowLeft, FaCalendarAlt, FaFilter, FaSearch, FaUser, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { attendanceData } from '@/data/attendanceData';
+import { teacherClasses } from '@/data/teacherClasses';
 import * as XLSX from 'xlsx';
 
 const AttendancePage = () => {
@@ -12,18 +13,62 @@ const AttendancePage = () => {
   const params = useParams();
   const classId = params.classId as string;
 
-  const selectedDate = 'Dec 17, 2025'; // Static for now
+  const classDetails = teacherClasses.find(c => c.name.toLowerCase() === classId.toLowerCase());
+
+  if (!classDetails) {
+    return <p>Class not found.</p>;
+  }
+
+  const isClassInSession = (classTime: string | undefined): boolean => {
+    if (!classTime) {
+      return false;
+    }
+
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const timeRegex = /^(\w+)\s+([\d:]+)\s*-\s*([\d:]+)\s*(AM|PM)$/i;
+    const match = classTime.match(timeRegex);
+
+    if (!match) {
+      console.warn(`Invalid class time format: "${classTime}"`);
+      return false;
+    }
+
+    const [, days, startTime, endTime, endPeriod] = match;
+
+    const parseTime = (timeStr: string, period: string) => {
+      let [hours, minutes] = timeStr.split(':').map(Number);
+      if (period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+      if (period.toUpperCase() === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    };
+
+    const endMinutes = parseTime(endTime, endPeriod);
+    let startMinutes = parseTime(startTime, endPeriod);
+
+    if (startMinutes > endMinutes) {
+      startMinutes -= 12 * 60; // Adjust for AM if start time is before noon but end time is in PM
+    }
+
+    const dayMap: { [key: string]: number[] } = {
+      'M': [1], 'T': [2], 'W': [3], 'TH': [4], 'F': [5], 'S': [6], 'SU': [0],
+      'MW': [1, 3], 'TTH': [2, 4], 'MWF': [1, 3, 5],
+    };
+    const classDays = dayMap[days.toUpperCase() as keyof typeof dayMap];
+
+    if (classDays && classDays.includes(currentDay)) {
+      return currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes;
+    }
+
+    return false;
+  };
+
+  const selectedDate = 'Jan 10, 2026'; // Static for now
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentForExport, setSelectedStudentForExport] = useState('All');
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
-
-  // Mock data - in a real app, you would fetch this based on classId
-  const classDetails = {
-    name: classId.toUpperCase().replace('-', ' '),
-    teacher: 'Prof. Maria Santos',
-    room: 'Rm 301',
-    schedule: '11965',
-  };
   
   const allStudentsList = Array.from(new Set(Object.values(attendanceData).flat().map(s => s.name)));
 
@@ -136,12 +181,21 @@ const AttendancePage = () => {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <h1 className="text-3xl font-bold">{classDetails.name}</h1>
         <p className="text-gray-600">
-          Room: {classDetails.room}  Schedule: {classDetails.schedule}
+          Room: {classDetails.room}  Schedule: {classDetails.schedule}  Time: {classDetails.time}
         </p>
       </div>
 
       {/* Buttons */}
       <div className="flex justify-end gap-4 mb-6">
+        {isClassInSession(classDetails.time) && (
+          <button
+            onClick={() => console.log('Take Attendance clicked')}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg flex items-center gap-2"
+          >
+            <FaCalendarAlt />
+            Take Attendance
+          </button>
+        )}
         <button
           onClick={() => console.log('Filter by Date clicked')}
           className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"

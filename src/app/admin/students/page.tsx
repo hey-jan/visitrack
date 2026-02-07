@@ -6,7 +6,7 @@ import AddStudentModal from '../components/AddStudentModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import EditStudentModal from '../components/EditStudentModal';
 
-import { students as studentsData } from '@/data/students';
+import { students as studentsData, Student } from '@/data/students';
 
 const ManageStudentsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,8 +16,7 @@ const ManageStudentsPage = () => {
   const [studentToEdit, setStudentToEdit] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('All Courses');
-
-  const students = useMemo(() => studentsData, []);
+  const [students, setStudents] = useState<Student[]>(studentsData);
 
   const courses = useMemo(() => ['All Courses', ...Array.from(new Set(students.map(s => s.course)))], [students]);
 
@@ -53,6 +52,10 @@ const ManageStudentsPage = () => {
     // Here you would typically make an API call to update the student
     setIsEditModalOpen(false);
     setStudentToEdit(null);
+  };
+
+  const handleAddStudent = (student: Student) => {
+    setStudents([...students, student]);
   };
 
   return (
@@ -147,7 +150,11 @@ const ManageStudentsPage = () => {
         </table>
       </div>
 
-      <AddStudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <AddStudentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAdd={handleAddStudent}
+      />
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

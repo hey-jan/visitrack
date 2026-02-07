@@ -1,4 +1,11 @@
-export const students = [
+export interface Student {
+  name: string;
+  course: string;
+  year: number;
+  section: string;
+}
+
+export const students: Student[] = [
   { name: 'John Doe', course: 'Bachelor of Science in Computer Science', year: 3, section: 'A' },
   { name: 'Jane Smith', course: 'Bachelor of Science in Information Technology', year: 2, section: 'B' },
   { name: 'Michael Johnson', course: 'Bachelor of Science in Engineering', year: 4, section: 'A' },

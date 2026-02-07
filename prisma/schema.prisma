@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Student {
+  id           String    @id @default(uuid())
+  firstName    String
+  lastName     String
+  class        String
+  year         Int
+  section      String
+  frontPhotoUrl String?
+  leftPhotoUrl String?
+  rightPhotoUrl String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  attendances  Attendance[]
+}
+
+model Class {
+  id         String    @id @default(uuid())
+  schedNo    String    @unique
+  courseNo   String
+  time       String
+  days       String
+  room       String
+  units      Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  attendances Attendance[]
+}
+
+model Attendance {
+  id         String    @id @default(uuid())
+  student    Student   @relation(fields: [studentId], references: [id])
+  studentId  String
+  class      Class     @relation(fields: [classId], references: [id])
+  classId    String
+  date       DateTime
+  isPresent  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([studentId, classId, date]) // A student can only have one attendance record per course per day
+}

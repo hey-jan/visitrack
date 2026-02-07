@@ -1,20 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-interface EditCourseModalProps {
+interface AddClassModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (course: any) => void;
-  course: any;
+  onSave: (classItem: any) => void;
 }
 
-const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSave, course }) => {
-  const [formData, setFormData] = useState(course || {});
-
-  useEffect(() => {
-    setFormData(course || {});
-  }, [course]);
+const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }) => {
+  const [formData, setFormData] = useState<any>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,7 +27,7 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Course</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Add Class</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Sched. No.</label>
@@ -40,7 +35,6 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               type="text"
               name="schedNo"
               className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-              value={formData.schedNo || ''}
               onChange={handleChange}
             />
           </div>
@@ -50,7 +44,6 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               type="text"
               name="courseNo"
               className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-              value={formData.courseNo || ''}
               onChange={handleChange}
             />
           </div>
@@ -61,7 +54,6 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
                 type="text"
                 name="time"
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.time || ''}
                 onChange={handleChange}
               />
             </div>
@@ -71,7 +63,6 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
                 type="text"
                 name="days"
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.days || ''}
                 onChange={handleChange}
               />
             </div>
@@ -83,7 +74,6 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
                 type="text"
                 name="room"
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.room || ''}
                 onChange={handleChange}
               />
             </div>
@@ -93,7 +83,6 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
                 type="number"
                 name="units"
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.units || ''}
                 onChange={handleChange}
               />
             </div>
@@ -110,7 +99,7 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               type="submit"
               className="bg-black text-white px-6 py-3 rounded-lg"
             >
-              Save Changes
+              Add Class
             </button>
           </div>
         </form>
@@ -119,4 +108,4 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
   );
 };
 
-export default EditCourseModal;
+export default AddClassModal;

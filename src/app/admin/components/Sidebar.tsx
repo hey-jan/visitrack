@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaHome, FaUserGraduate, FaBook, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaUserGraduate, FaBook, FaCog, FaSignOutAlt, FaUserTie } from 'react-icons/fa';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -12,7 +12,8 @@ const Sidebar = () => {
   const navLinks = [
     { href: '/admin', label: 'Dashboard', icon: FaHome },
     { href: '/admin/students', label: 'Manage Students', icon: FaUserGraduate },
-    { href: '/admin/courses', label: 'Manage Courses', icon: FaBook },
+    { href: '/admin/teachers', label: 'Manage Teachers', icon: FaUserTie },
+    { href: '/admin/classes', label: 'Manage Classes', icon: FaBook },
     { href: '/admin/settings', label: 'Settings', icon: FaCog },
   ];
 
