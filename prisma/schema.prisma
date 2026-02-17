@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -38,6 +38,8 @@ model Class {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   attendances Attendance[]
+  teacherId   String?
+  teacher     User?    @relation(fields: [teacherId], references: [id])
 }
 
 model Attendance {
@@ -52,4 +54,22 @@ model Attendance {
   updatedAt  DateTime  @updatedAt
 
   @@unique([studentId, classId, date]) // A student can only have one attendance record per course per day
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  firstName  String
+  lastName   String
+  department String?
+  role       Role     @default(TEACHER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  classes    Class[]
 }
