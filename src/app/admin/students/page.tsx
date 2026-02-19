@@ -17,7 +17,10 @@ const ManageStudentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('All Courses');
 
-  const students = useMemo(() => studentsData, []);
+  const students = useMemo(() => studentsData.map(student => ({
+    ...student,
+    name: `${student.firstName} ${student.lastName}`
+  })), []);
 
   const courses = useMemo(() => ['All Courses', ...Array.from(new Set(students.map(s => s.course)))], [students]);
 

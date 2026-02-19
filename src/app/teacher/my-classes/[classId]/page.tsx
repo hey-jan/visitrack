@@ -1,129 +1,185 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaArrowLeft, FaCalendarAlt, FaFilter, FaSearch, FaUser, FaFilePdf, FaFileExcel } from 'react-icons/fa';
-import { attendanceData } from '@/data/attendanceData';
 import * as XLSX from 'xlsx';
+
+interface ClassDetails {
+  id: string;
+  name: string;
+  room: string;
+  schedule: string;
+  days: string;
+  time: string;
+  students: Student[];
+  teacher: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
+interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface AttendanceRecord {
+  id: string;
+  date: string;
+  status: string;
+  time: string;
+  student: Student;
+}
 
 const AttendancePage = () => {
   const router = useRouter();
   const params = useParams();
   const classId = params.classId as string;
 
-  const selectedDate = 'Dec 17, 2025'; // Static for now
+  const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentForExport, setSelectedStudentForExport] = useState('All');
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Mock data - in a real app, you would fetch this based on classId
-  const classDetails = {
-    name: classId.toUpperCase().replace('-', ' '),
-    teacher: 'Prof. Maria Santos',
-    room: 'Rm 301',
-    schedule: '11965',
-  };
-  
-  const allStudentsList = Array.from(new Set(Object.values(attendanceData).flat().map(s => s.name)));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch class details
+        const classRes = await fetch(`/api/classes/${classId}`);
+        const classData: ClassDetails = await classRes.json();
+        setClassDetails(classData);
 
-  const students = (attendanceData[selectedDate] || [])
-    .filter((student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+        // Fetch available attendance dates
+        const datesRes = await fetch(`/api/attendance/dates/${classId}`);
+        const datesData: string[] = await datesRes.json();
+        setAvailableDates(datesData);
+        if (datesData.length > 0) {
+          setSelectedDate(datesData[0]); // Select the most recent date by default
+        }
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+      }
+    };
+    fetchData();
+  }, [classId]);
 
-    const handleExportExcel = () => {
-      const allDates = Object.keys(attendanceData).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  useEffect(() => {
+    if (selectedDate && classId) {
+      const fetchAttendance = async () => {
+        try {
+          const attendanceRes = await fetch(`/api/attendance/${classId}?date=${selectedDate}`);
+          const attendanceData: AttendanceRecord[] = await attendanceRes.json();
+          setAttendanceRecords(attendanceData);
+        } catch (error) {
+          console.error('Error fetching attendance records:', error);
+        }
+      };
+      fetchAttendance();
+    }
+  }, [classId, selectedDate]);
+
+  if (!classDetails) {
+    return <div>Loading class details...</div>;
+  }
+
+  const filteredStudents = attendanceRecords.filter((record) =>
+    `${record.student.firstName} ${record.student.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalStudentsInClass = classDetails?.students?.length || 0;
+  const presentCount = attendanceRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
+  const absentCount = attendanceRecords.filter(r => r.status === 'Absent').length;
+  const lateCount = attendanceRecords.filter(r => r.status === 'Late').length;
+
+  const handleExportExcel = async () => {
+    if (!classDetails || !classDetails.students) return;
+
+    setIsExporting(true);
+    try {
+      // Fetch all attendance records for the class
+      const res = await fetch(`/api/attendance/${classId}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch attendance data.');
+      }
+      const allAttendanceRecords: AttendanceRecord[] = await res.json();
+
       const workbook = XLSX.utils.book_new();
-  
+
+      // Export for a specific student
       if (selectedStudentForExport !== 'All') {
-        const studentName = selectedStudentForExport;
-        const studentDataRows = allDates.map(date => {
-          const studentRecord = attendanceData[date]?.find(s => s.name === studentName);
+        const studentToExport = classDetails.students.find(
+          (s) => `${s.firstName} ${s.lastName}` === selectedStudentForExport
+        );
+
+        if (!studentToExport) return;
+
+        const studentAttendance = availableDates.map(date => {
+          const record = allAttendanceRecords.find(ar => ar.date === date && ar.student.id === studentToExport.id);
           return {
             'Date': new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
-            'Status': studentRecord ? studentRecord.status : 'Absent',
-            'Time': studentRecord ? studentRecord.time : 'N/A'
+            'Status': record ? record.status : 'Absent',
+            'Time': record ? record.time : 'N/A',
           };
         });
-  
-        const worksheet = XLSX.utils.json_to_sheet(studentDataRows);
-        const headerRange = XLSX.utils.decode_range(worksheet['!ref'] as string);
-        for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
-          const cellAddress = XLSX.utils.encode_cell({ r: headerRange.s.r, c: C });
-          const cell = worksheet[cellAddress];
-          if (cell) {
-            cell.s = {
-              fill: { fgColor: { rgb: "000000" } },
-              font: { color: { rgb: "FFFFFF" }, bold: true },
-            };
-          }
-        }
-  
-        XLSX.utils.book_append_sheet(workbook, worksheet, `${studentName} Attendance`);
-        XLSX.writeFile(workbook, `${classId.toUpperCase()}_${studentName}_Attendance.xlsx`);
+
+        const worksheet = XLSX.utils.json_to_sheet(studentAttendance);
+        XLSX.utils.book_append_sheet(workbook, worksheet, `${selectedStudentForExport} Attendance`);
+        XLSX.writeFile(workbook, `${classDetails.name.toUpperCase()}_${selectedStudentForExport}_Attendance.xlsx`);
       } else {
-        // Existing logic for "All" students
-        const summaryRows = allStudentsList.map(studentName => {
-          let presentCount = 0;
-          let absentCount = 0;
-          allDates.forEach(date => {
-            const studentData = attendanceData[date]?.find(s => s.name === studentName);
-            if (studentData && (studentData.status === 'Present' || studentData.status === 'Late')) {
-              presentCount++;
+        // Export for all students (summary and detailed)
+        const summaryRows = classDetails.students.map(student => {
+          let present = 0;
+          let absent = 0;
+          availableDates.forEach(date => {
+            const record = allAttendanceRecords.find(ar => ar.date === date && ar.student.id === student.id);
+            if (record && (record.status === 'Present' || record.status === 'Late')) {
+              present++;
             } else {
-              absentCount++;
+              absent++;
             }
           });
-          return { 'Student Name': studentName, 'Present': presentCount, 'Absent': absentCount };
+          return { 'Student Name': `${student.firstName} ${student.lastName}`, 'Present': present, 'Absent': absent };
         });
-  
+
         const summaryWorksheet = XLSX.utils.aoa_to_sheet([
           ['Subject:', classDetails.name],
-          ['Total Class Days:', allDates.length],
+          ['Total Class Days:', availableDates.length],
           [],
         ]);
         XLSX.utils.sheet_add_json(summaryWorksheet, summaryRows, { origin: 'A4' });
-        const summaryHeaderRange = { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } };
-        for (let C = summaryHeaderRange.s.c; C <= summaryHeaderRange.e.c; ++C) {
-          const cellAddress = XLSX.utils.encode_cell({ r: summaryHeaderRange.s.r, c: C });
-          const cell = summaryWorksheet[cellAddress];
-          if (cell) {
-            cell.s = { fill: { fgColor: { rgb: "000000" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
-          }
-        }
         XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
-  
-        const months = [...new Set(allDates.map(date => new Date(date).toLocaleString('en-US', { month: 'long', year: 'numeric' })))];
-        months.forEach(month => {
-          const datesInMonth = allDates.filter(date => new Date(date).toLocaleString('en-US', { month: 'long', year: 'numeric' }) === month);
-          const headerDatesFormatted = datesInMonth.map(date => new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }));
-          
-          const rows = allStudentsList.map(studentName => {
-            const row: { [key: string]: string } = { 'Student Name': studentName };
-            datesInMonth.forEach(date => {
-              const formattedDate = new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
-              const studentData = attendanceData[date]?.find(s => s.name === studentName);
-              row[formattedDate] = studentData ? studentData.status : 'Absent';
-            });
-            return row;
+
+        availableDates.forEach(date => {
+          const recordsForDate = allAttendanceRecords.filter(ar => ar.date === date);
+          const rows = classDetails.students.map(student => {
+            const record = recordsForDate.find(ar => ar.student.id === student.id);
+            return {
+              'Student Name': `${student.firstName} ${student.lastName}`,
+              'Status': record ? record.status : 'Absent',
+              'Time': record ? record.time : 'N/A',
+            };
           });
-  
+
           const worksheet = XLSX.utils.json_to_sheet(rows);
-          const headerRange = XLSX.utils.decode_range(worksheet['!ref'] as string);
-          for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
-            const cellAddress = XLSX.utils.encode_cell({ r: headerRange.s.r, c: C });
-            const cell = worksheet[cellAddress];
-            if (cell) {
-              cell.s = { fill: { fgColor: { rgb: "000000" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
-            }
-          }
-          XLSX.utils.book_append_sheet(workbook, worksheet, month);
+          XLSX.utils.book_append_sheet(workbook, worksheet, date);
         });
-  
-        XLSX.writeFile(workbook, `${classId.toUpperCase()}_Attendance.xlsx`);
+
+        XLSX.writeFile(workbook, `${classDetails.name.toUpperCase()}_Attendance.xlsx`);
       }
-    };
+    } catch (error) {
+      console.error('Failed to export Excel:', error);
+      alert('Failed to export Excel. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div>
@@ -136,48 +192,44 @@ const AttendancePage = () => {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <h1 className="text-3xl font-bold">{classDetails.name}</h1>
         <p className="text-gray-600">
-          Room: {classDetails.room}  Schedule: {classDetails.schedule}
+          Teacher: {`${classDetails.teacher?.firstName} ${classDetails.teacher?.lastName}`}
+        </p>
+        <p className="text-gray-600">
+          Room: {classDetails.room}  Days: {classDetails.days}  Time: {classDetails.time}
         </p>
       </div>
 
       {/* Buttons */}
       <div className="flex justify-end gap-4 mb-6">
-        <button
-          onClick={() => console.log('Filter by Date clicked')}
-          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
-        >
-          <FaCalendarAlt />
-          Filter by Date
-        </button>
         <div className="relative">
           <button
             onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
-            className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+            className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2 cursor-pointer"
           >
             <FaUser />
             {selectedStudentForExport === 'All' ? 'Filter by Student' : selectedStudentForExport}
           </button>
           {isStudentDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10">
               <button
                 onClick={() => {
                   setSelectedStudentForExport('All');
                   setIsStudentDropdownOpen(false);
                 }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
               >
                 All Students
               </button>
-              {allStudentsList.map(studentName => (
+              {classDetails.students.map(student => (
                 <button
-                  key={studentName}
+                  key={student.id}
                   onClick={() => {
-                    setSelectedStudentForExport(studentName);
+                    setSelectedStudentForExport(`${student.firstName} ${student.lastName}`);
                     setIsStudentDropdownOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                 >
-                  {studentName}
+                  {`${student.firstName} ${student.lastName}`}
                 </button>
               ))}
             </div>
@@ -185,26 +237,27 @@ const AttendancePage = () => {
         </div>
         <button
           onClick={() => console.log('Export PDF clicked')}
-          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2 cursor-pointer"
         >
           <FaFilePdf />
           Export PDF
         </button>
         <button
           onClick={handleExportExcel}
-          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+          className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2 cursor-pointer disabled:bg-gray-500"
+          disabled={isExporting}
         >
           <FaFileExcel />
-          Export Excel
+          {isExporting ? 'Exporting...' : 'Export Excel'}
         </button>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Total Students</p><p className="text-2xl font-bold">10</p></div>
-        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Present</p><p className="text-2xl font-bold">7</p></div>
-        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Absent</p><p className="text-2xl font-bold">2</p></div>
-        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Late</p><p className="text-2xl font-bold">1</p></div>
+        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Total Students</p><p className="text-2xl font-bold">{totalStudentsInClass}</p></div>
+        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Present</p><p className="text-2xl font-bold">{presentCount}</p></div>
+        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Absent</p><p className="text-2xl font-bold">{absentCount}</p></div>
+        <div className="bg-white p-4 rounded-lg shadow-md text-center"><p className="text-gray-500">Late</p><p className="text-2xl font-bold">{lateCount}</p></div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
@@ -213,15 +266,15 @@ const AttendancePage = () => {
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-4 flex items-center"><FaCalendarAlt className="mr-2"/> Attendance Dates</h2>
             <div className="space-y-2">
-              <button className="w-full text-left p-3 rounded-lg bg-black text-white">Dec 17, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 16, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 13, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 12, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 11, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 10, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 09, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 08, 2025</button>
-              <button className="w-full text-left p-3 rounded-lg hover:bg-gray-100">Dec 07, 2025</button>
+              {availableDates.map((date) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={`w-full text-left p-3 rounded-lg ${selectedDate === date ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                >
+                  {date}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -250,11 +303,11 @@ const AttendancePage = () => {
                         <div>Time</div>
                     </div>
                     {/* Student Rows */}
-                    {students.map((student, index) => (
-                        <div key={index} className="grid grid-cols-2 md:grid-cols-3 gap-4 items-center border border-gray-100 rounded-lg p-4">
-                            <div className="font-semibold">{student.name}</div>
-                            <div className="text-gray-800">{student.status}</div>
-                            <div className="text-gray-600">{student.time}</div>
+                    {filteredStudents.map((record) => (
+                        <div key={record.id} className="grid grid-cols-2 md:grid-cols-3 gap-4 items-center border border-gray-100 rounded-lg p-4">
+                            <div className="font-semibold">{`${record.student.firstName} ${record.student.lastName}`}</div>
+                            <div className="text-gray-800">{record.status}</div>
+                            <div className="text-gray-600">{record.time}</div>
                         </div>
                     ))}
                 </div>

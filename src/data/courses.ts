@@ -1,4 +1,7 @@
 export const courses = [
+  { schedNo: '10001', courseNo: 'CS101', courseName: 'Introduction to Computer Science', time: '9:00 - 10:30 AM', days: 'MWF', room: 'Lab 1', units: 3 },
+  { schedNo: '10002', courseNo: 'ENG201', courseName: 'British Literature', time: '11:00 AM - 12:30 PM', days: 'TTH', room: 'Room 201', units: 3 },
+  { schedNo: '10003', courseNo: 'MATH301', courseName: 'Calculus III', time: '1:00 - 2:30 PM', days: 'MWF', room: 'Room 301', units: 4 },
   { schedNo: '11965', courseNo: 'CC-COMPROG11', time: '8:00 - 9:30 AM', days: 'MWF', room: '538', units: 3 },
   { schedNo: '12043', courseNo: 'CC-INTCOM11', time: '1:00 - 2:30 PM', days: 'TTH', room: '205', units: 3 },
   { schedNo: '11892', courseNo: 'ENGL 100', time: '10:00 - 11:30 AM', days: 'MWF', room: '104', units: 3 },
@@ -34,3 +37,4 @@ export const courses = [
   { schedNo: '12372', courseNo: 'PHILO 101', time: '2:30 - 4:00 PM', days: 'MWF', room: '115', units: 3 },
   { schedNo: '12373', courseNo: 'STS 101', time: '11:00 AM - 12:30 PM', days: 'TTH', room: '305', units: 3 },
 ];
+

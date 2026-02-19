@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id         String   @id @default(cuid())
+  firstName  String
+  lastName   String
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  year       Int
+  section    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Attendance Attendance[]
+  classes    Class[]
+}
+
+model Course {
+  id         String    @id @default(cuid())
+  courseNo   String
+  courseName String
+  schedNo    String?
+  time       String?
+  days       String?
+  room       String?
+  units      Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  students   Student[]
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  class     Class[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Class {
+  id         String   @id @default(cuid())
+  name       String
+  teacherId  String
+  teacher    Teacher  @relation(fields: [teacherId], references: [id])
+  room       String
+  schedule   String
+  days       String
+  time       String
+  students   Student[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Attendance Attendance[]
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  date      String
+  status    String
+  time      String
+  student   Student  @relation(fields: [studentId], references: [id])
+  studentId String
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,18 +1,45 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaBook, FaSearch } from 'react-icons/fa';
-import { teacherClasses } from '@/data/teacherClasses';
+
+interface Class {
+  id: string;
+  name: string;
+  room: string;
+  schedule: string;
+  days: string;
+  time: string;
+  students: number;
+  teacher: {
+    firstName: string;
+    lastName: string;
+  };
+}
 
 const MyClassesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const classes = teacherClasses;
+  const [classes, setClasses] = useState<Class[]>([]);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await fetch('/api/classes');
+        const data = await res.json();
+        setClasses(data);
+      } catch (error) {
+        console.error('Failed to fetch classes:', error);
+      }
+    };
+    fetchClasses();
+  }, []);
 
   const filteredClasses = classes.filter((classInfo) =>
     classInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    classInfo.teacher.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    `${classInfo.teacher.firstName} ${classInfo.teacher.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.room.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    classInfo.schedule.toLowerCase().includes(searchQuery.toLowerCase())
+    classInfo.days.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    classInfo.time.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -36,16 +63,20 @@ const MyClassesPage = () => {
               <FaBook size={24} />
             </div>
             <h2 className="text-xl font-bold">{classInfo.name}</h2>
-            
+            <p className="text-gray-600 mb-4">{`${classInfo.teacher.firstName} ${classInfo.teacher.lastName}`}</p>
             
             <div className="text-left w-full">
               <div className="flex justify-between py-1">
-                <span className="text-gray-600">Room Number:</span>
+                <span className="text-gray-600">Room:</span>
                 <span>{classInfo.room}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-gray-600">Schedule Number:</span>
-                <span>{classInfo.schedule}</span>
+                <span className="text-gray-600">Days:</span>
+                <span>{classInfo.days}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-gray-600">Time:</span>
+                <span>{classInfo.time}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-600">Total Students:</span>
@@ -53,7 +84,7 @@ const MyClassesPage = () => {
               </div>
             </div>
 
-            <Link href={`/teacher/my-classes/${classInfo.name.toLowerCase()}`} className="w-full">
+            <Link href={`/teacher/my-classes/${classInfo.id}`} className="w-full">
               <div className="bg-black text-white px-6 py-3 rounded-lg mt-6 w-full">
                 View Attendance
               </div>

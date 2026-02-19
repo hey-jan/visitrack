@@ -1,30 +1,42 @@
-export const teacherClasses = [
+export const classes = [
   {
     name: 'CS-PRACT41',
-    teacher: 'Maria Santos',
     room: 'Rm 301',
     schedule: '11965',
+    days: 'MWF',
+    time: '8:00 - 9:30 AM',
     students: 10,
   },
   {
     name: 'CS-FRELEAN',
-    teacher: 'Maria Santos',
     room: 'Rm 402',
     schedule: '11973',
+    days: 'TTH',
+    time: '1:00 - 2:30 PM',
     students: 8,
   },
   {
     name: 'CS-OPSYS41',
-    teacher: 'Maria Santos',
     room: 'Rm 305',
     schedule: '11981',
+    days: 'MWF',
+    time: '10:00 - 11:30 AM',
     students: 6,
   },
   {
     name: 'CS-THESIS41',
-    teacher: 'Maria Santos',
     room: 'Rm 501',
     schedule: '12005',
+    days: 'TTH',
+    time: '2:30 - 4:00 PM',
     students: 6,
+  },
+  {
+    name: 'CC-COMPROG11',
+    room: '538',
+    schedule: '11965',
+    days: 'MWF',
+    time: '8:00 - 9:30 AM',
+    students: 15,
   },
 ];
