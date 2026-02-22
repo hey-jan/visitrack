@@ -2,29 +2,48 @@
 
 import React, { useState, useEffect } from 'react';
 
-interface EditCourseModalProps {
+interface EditClassModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (course: any) => void;
-  course: any;
+  onSave: (updatedClass: any) => void;
+  course: any; // Using 'course' prop name to avoid breaking parent for now, but it contains class data
 }
 
-const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSave, course }) => {
-  const [formData, setFormData] = useState(course || {});
+const EditClassModal: React.FC<EditClassModalProps> = ({ isOpen, onClose, onSave, course: cls }) => {
+  const [formData, setFormData] = useState(cls || {});
 
   useEffect(() => {
-    setFormData(course || {});
-  }, [course]);
+    setFormData(cls || {});
+  }, [cls]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ 
+      ...prev, 
+      [name]: name === 'units' ? parseInt(value) || '' : value 
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+    try {
+      const res = await fetch(`/api/classes/${cls.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        const updatedClass = await res.json();
+        onSave(updatedClass);
+        onClose();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to update class');
+      }
+    } catch (error) {
+      console.error('Error updating class:', error);
+      alert('An error occurred while updating the class');
+    }
   };
 
   if (!isOpen) return null;
@@ -32,25 +51,27 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Course</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Class</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Sched. No.</label>
             <input
               type="text"
-              name="schedNo"
+              name="schedule"
+              required
               className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-              value={formData.schedNo || ''}
+              value={formData.schedule || ''}
               onChange={handleChange}
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Course No.</label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Class Name</label>
             <input
               type="text"
-              name="courseNo"
+              name="name"
+              required
               className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-              value={formData.courseNo || ''}
+              value={formData.name || ''}
               onChange={handleChange}
             />
           </div>
@@ -60,6 +81,7 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               <input
                 type="text"
                 name="time"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 value={formData.time || ''}
                 onChange={handleChange}
@@ -70,6 +92,7 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               <input
                 type="text"
                 name="days"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 value={formData.days || ''}
                 onChange={handleChange}
@@ -82,6 +105,7 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               <input
                 type="text"
                 name="room"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 value={formData.room || ''}
                 onChange={handleChange}
@@ -92,6 +116,7 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
               <input
                 type="number"
                 name="units"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 value={formData.units || ''}
                 onChange={handleChange}
@@ -119,4 +144,4 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({ isOpen, onClose, onSa
   );
 };
 
-export default EditCourseModal;
+export default EditClassModal;

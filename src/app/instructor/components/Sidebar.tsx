@@ -10,9 +10,9 @@ const Sidebar = () => {
   const router = useRouter();
 
   const navLinks = [
-    { href: '/teacher/dashboard', label: 'Dashboard', icon: FaHome },
-    { href: '/teacher/my-classes', label: 'My Classes', icon: FaGraduationCap },
-    { href: '/teacher/settings', label: 'Settings', icon: FaCog },
+    { href: '/instructor/dashboard', label: 'Dashboard', icon: FaHome },
+    { href: '/instructor/my-classes', label: 'My Classes', icon: FaGraduationCap },
+    { href: '/instructor/settings', label: 'Settings', icon: FaCog },
   ];
 
   const handleLogout = () => {
@@ -23,7 +23,7 @@ const Sidebar = () => {
 
   return (
     <aside className="w-72 bg-black text-white flex flex-col">
-      <div className="p-6 text-2xl font-bold">Teacher Portal</div>
+      <div className="p-6 text-2xl font-bold">Instructor Portal</div>
       <nav className="flex-1 px-4">
         <ul>
           {navLinks.map((link) => {

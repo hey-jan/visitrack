@@ -28,10 +28,12 @@ interface Student {
 
 interface AttendanceRecord {
   id: string;
-  date: string;
   status: string;
   time: string;
   student: Student;
+  session: {
+    date: string;
+  };
 }
 
 const AttendancePage = () => {
@@ -121,7 +123,7 @@ const AttendancePage = () => {
         if (!studentToExport) return;
 
         const studentAttendance = availableDates.map(date => {
-          const record = allAttendanceRecords.find(ar => ar.date === date && ar.student.id === studentToExport.id);
+          const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === studentToExport.id);
           return {
             'Date': new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             'Status': record ? record.status : 'Absent',
@@ -138,7 +140,7 @@ const AttendancePage = () => {
           let present = 0;
           let absent = 0;
           availableDates.forEach(date => {
-            const record = allAttendanceRecords.find(ar => ar.date === date && ar.student.id === student.id);
+            const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
             if (record && (record.status === 'Present' || record.status === 'Late')) {
               present++;
             } else {
@@ -157,7 +159,7 @@ const AttendancePage = () => {
         XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
 
         availableDates.forEach(date => {
-          const recordsForDate = allAttendanceRecords.filter(ar => ar.date === date);
+          const recordsForDate = allAttendanceRecords.filter(ar => ar.session.date === date);
           const rows = classDetails.students.map(student => {
             const record = recordsForDate.find(ar => ar.student.id === student.id);
             return {

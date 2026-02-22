@@ -11,9 +11,9 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
 
-    const whereClause: any = { classId: classId };
+    const whereClause: any = { session: { classId: classId } };
     if (date) {
-      whereClause.date = date;
+      whereClause.session.date = date;
     }
 
     const attendance = await prisma.attendance.findMany({
@@ -21,10 +21,12 @@ export async function GET(
       include: {
         student: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
           },
         },
+        session: true,
       },
     });
     return NextResponse.json(attendance);
@@ -45,16 +47,39 @@ export async function POST(
     const { classId } = await params;
     const records = await request.json();
 
+    if (!records || records.length === 0) {
+      return NextResponse.json({ error: 'No records provided' }, { status: 400 });
+    }
+
+    // Assume all records in this batch are for the same date
+    const date = records[0].date;
+
+    // Find or create a session for this class and date
+    const session = await prisma.session.upsert({
+      where: {
+        classId_date: {
+          classId,
+          date,
+        },
+      },
+      update: {},
+      create: {
+        classId,
+        date,
+      },
+    });
+
     // Create attendance records in a transaction
     const createdRecords = await prisma.$transaction(
       records.map((record: any) =>
         prisma.attendance.create({
           data: {
-            date: record.date,
             status: record.status,
             time: record.time,
             studentId: record.studentId,
-            classId: classId,
+            sessionId: session.id,
+            confidence: record.confidence ? parseFloat(record.confidence) : null,
+            snapshotUrl: record.snapshotUrl || null,
           },
         })
       )

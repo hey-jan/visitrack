@@ -12,7 +12,7 @@ const Sidebar = () => {
   const navLinks = [
     { href: '/admin', label: 'Dashboard', icon: FaHome },
     { href: '/admin/students', label: 'Manage Students', icon: FaUserGraduate },
-    { href: '/admin/courses', label: 'Manage Courses', icon: FaBook },
+    { href: '/admin/courses', label: 'Manage Classes', icon: FaBook },
     { href: '/admin/settings', label: 'Settings', icon: FaCog },
   ];
 

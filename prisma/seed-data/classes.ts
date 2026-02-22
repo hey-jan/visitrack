@@ -5,7 +5,9 @@ export const classes = [
     schedule: '11965',
     days: 'MWF',
     time: '8:00 - 9:30 AM',
+    units: 3,
     students: 10,
+    instructorEmail: 'maria.santos@example.com',
   },
   {
     name: 'CS-FRELEAN',
@@ -13,7 +15,9 @@ export const classes = [
     schedule: '11973',
     days: 'TTH',
     time: '1:00 - 2:30 PM',
+    units: 3,
     students: 8,
+    instructorEmail: 'juan.delacruz@example.com',
   },
   {
     name: 'CS-OPSYS41',
@@ -21,7 +25,9 @@ export const classes = [
     schedule: '11981',
     days: 'MWF',
     time: '10:00 - 11:30 AM',
+    units: 3,
     students: 6,
+    instructorEmail: 'ricardo.gomez@example.com',
   },
   {
     name: 'CS-THESIS41',
@@ -29,7 +35,9 @@ export const classes = [
     schedule: '12005',
     days: 'TTH',
     time: '2:30 - 4:00 PM',
+    units: 3,
     students: 6,
+    instructorEmail: 'elena.rodriguez@example.com',
   },
   {
     name: 'CC-COMPROG11',
@@ -37,6 +45,8 @@ export const classes = [
     schedule: '11965',
     days: 'MWF',
     time: '8:00 - 9:30 AM',
+    units: 3,
     students: 15,
+    instructorEmail: 'maria.santos@example.com',
   },
 ];

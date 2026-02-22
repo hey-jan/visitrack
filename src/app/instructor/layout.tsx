@@ -1,7 +1,7 @@
 import React from 'react';
 import Sidebar from './components/Sidebar';
 
-export default function TeacherLayout({
+export default function InstructorLayout({
   children,
 }: {
   children: React.ReactNode;

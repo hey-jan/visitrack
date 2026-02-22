@@ -8,17 +8,16 @@ export async function GET(
 ) {
   try {
     const { classId } = await params;
-    const dates = await prisma.attendance.findMany({
+    const sessions = await prisma.session.findMany({
       where: { classId: classId },
       select: {
         date: true,
       },
-      distinct: ['date'],
       orderBy: {
         date: 'desc',
       },
     });
-    return NextResponse.json(dates.map((d) => d.date));
+    return NextResponse.json(sessions.map((s) => s.date));
   } catch (error) {
     console.error('Error fetching attendance dates:', error);
     return NextResponse.json(

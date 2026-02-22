@@ -6,7 +6,7 @@ import AddStudentModal from '../components/AddStudentModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import EditStudentModal from '../components/EditStudentModal';
 
-import { students as studentsData } from '@/data/students';
+import { students as studentsData } from '../../../../prisma/seed-data/students';
 
 const ManageStudentsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

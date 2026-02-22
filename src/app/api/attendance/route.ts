@@ -6,7 +6,12 @@ export async function GET() {
   try {
     const attendance = await prisma.attendance.findMany({
       include: {
-        class: true,
+        session: {
+          include: {
+            class: true,
+          },
+        },
+        student: true,
       },
     });
     return NextResponse.json(attendance);
@@ -22,7 +27,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { classId, studentId, status } = data;
+    const { classId, studentId, status, date } = data;
 
     // Basic validation
     if (!classId || !studentId || !status) {
@@ -32,11 +37,31 @@ export async function POST(request: Request) {
       );
     }
 
+    const attendanceDate = date || new Date().toISOString().split('T')[0];
+
+    // Find or create a session for this class and date
+    const session = await prisma.session.upsert({
+      where: {
+        classId_date: {
+          classId,
+          date: attendanceDate,
+        },
+      },
+      update: {},
+      create: {
+        classId,
+        date: attendanceDate,
+      },
+    });
+
     const newAttendance = await prisma.attendance.create({
       data: {
-        classId,
+        sessionId: session.id,
         studentId,
         status,
+        time: new Date().toLocaleTimeString(),
+        confidence: data.confidence ? parseFloat(data.confidence) : null,
+        snapshotUrl: data.snapshotUrl || null,
       },
     });
 

@@ -2,24 +2,51 @@
 
 import React, { useState } from 'react';
 
-interface AddCourseModalProps {
+interface AddClassModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (course: any) => void;
+  onSave: (newClass: any) => void;
 }
 
-const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave }) => {
-  const [formData, setFormData] = useState<any>({});
+const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }) => {
+  const [formData, setFormData] = useState<any>({
+    name: '',
+    schedule: '',
+    time: '',
+    days: '',
+    room: '',
+    units: '',
+    instructorId: 'cm7e3m2v50000ux3v8h3v8h3v', // Placeholder instructor ID, in a real app this would be a dropdown
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ 
+      ...prev, 
+      [name]: name === 'units' ? parseInt(value) || '' : value 
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+    try {
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        const newClass = await res.json();
+        onSave(newClass);
+        onClose();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to add class');
+      }
+    } catch (error) {
+      console.error('Error adding class:', error);
+      alert('An error occurred while adding the class');
+    }
   };
 
   if (!isOpen) return null;
@@ -27,22 +54,24 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Add Course</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Add Class</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Sched. No.</label>
             <input
               type="text"
-              name="schedNo"
+              name="schedule"
+              required
               className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
               onChange={handleChange}
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Course No.</label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Class Name</label>
             <input
               type="text"
-              name="courseNo"
+              name="name"
+              required
               className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
               onChange={handleChange}
             />
@@ -53,6 +82,7 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
               <input
                 type="text"
                 name="time"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 onChange={handleChange}
               />
@@ -62,6 +92,7 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
               <input
                 type="text"
                 name="days"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 onChange={handleChange}
               />
@@ -73,6 +104,7 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
               <input
                 type="text"
                 name="room"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 onChange={handleChange}
               />
@@ -82,6 +114,7 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
               <input
                 type="number"
                 name="units"
+                required
                 className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
                 onChange={handleChange}
               />
@@ -99,7 +132,7 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
               type="submit"
               className="bg-black text-white px-6 py-3 rounded-lg"
             >
-              Add Course
+              Add Class
             </button>
           </div>
         </form>
@@ -108,4 +141,4 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
   );
 };
 
-export default AddCourseModal;
+export default AddClassModal;

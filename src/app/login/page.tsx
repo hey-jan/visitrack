@@ -15,7 +15,7 @@ const LoginPage = () => {
       router.push('/admin');
     }
     else {
-      router.push('/teacher/dashboard');
+      router.push('/instructor/dashboard');
     }
   };
 
@@ -80,10 +80,10 @@ const LoginPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setAccountType('teacher')}
-                className={`w-1/2 py-2 rounded-lg ${accountType === 'teacher' ? 'bg-black text-white border border-gray-300' : 'bg-white text-black border border-gray-300'}`}
+                onClick={() => setAccountType('instructor')}
+                className={`w-1/2 py-2 rounded-lg ${accountType === 'instructor' ? 'bg-black text-white border border-gray-300' : 'bg-white text-black border border-gray-300'}`}
               >
-                Teacher
+                Instructor
               </button>
             </div>
           </div>

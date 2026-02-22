@@ -8,9 +8,9 @@ import AddCourseModal from '../components/AddCourseModal';
 
 const ManageClassesPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [courseToDelete, setCourseToDelete] = useState<any>(null);
+  const [classToDelete, setClassToDelete] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [courseToEdit, setCourseToEdit] = useState<any>(null);
+  const [classToEdit, setClassToEdit] = useState<any>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [classes, setClasses] = useState<any[]>([]);
@@ -19,7 +19,7 @@ const ManageClassesPage = () => {
   const fetchClasses = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/courses');
+      const res = await fetch('/api/classes');
       const data = await res.json();
       setClasses(data);
     } catch (error) {
@@ -34,43 +34,43 @@ const ManageClassesPage = () => {
   }, []);
 
   const filteredClasses = useMemo(() =>
-    classes.filter(course =>
-      (course.courseNo?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (course.schedNo?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
+    classes.filter(cls =>
+      (cls.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (cls.schedule?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
     ),
     [classes, searchTerm]
   );
 
-  const handleDeleteClick = (course: any) => {
-    setCourseToDelete(course);
+  const handleDeleteClick = (cls: any) => {
+    setClassToDelete(cls);
     setIsDeleteModalOpen(true);
   };
 
   const handleDeleteConfirm = () => {
-    console.log('Deleting class:', courseToDelete);
-    // Here you would typically make an API call to delete the course
+    console.log('Deleting class:', classToDelete);
+    // Here you would typically make an API call to delete the class
     setIsDeleteModalOpen(false);
-    setCourseToDelete(null);
+    setClassToDelete(null);
   };
 
-  const handleEditClick = (course: any) => {
-    setCourseToEdit(course);
+  const handleEditClick = (cls: any) => {
+    setClassToEdit(cls);
     setIsEditModalOpen(true);
   };
 
-  const handleEditSave = (updatedCourse: any) => {
-    console.log('Updating class:', updatedCourse);
+  const handleEditSave = (updatedClass: any) => {
+    console.log('Updating class:', updatedClass);
     fetchClasses();
     setIsEditModalOpen(false);
-    setCourseToEdit(null);
+    setClassToEdit(null);
   };
 
-  const handleAddCourse = () => {
+  const handleAddClass = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleAddSave = (newCourse: any) => {
-    console.log('Adding class:', newCourse);
+  const handleAddSave = (newClass: any) => {
+    console.log('Adding class:', newClass);
     fetchClasses();
     setIsAddModalOpen(false);
   };
@@ -95,7 +95,7 @@ const ManageClassesPage = () => {
             />
           </div>
           <button
-            onClick={handleAddCourse}
+            onClick={handleAddClass}
             className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
           >
             <FaPlus />
@@ -110,7 +110,7 @@ const ManageClassesPage = () => {
             <thead>
               <tr className="text-left text-gray-500 border-b border-gray-200">
                 <th className="py-4">Sched. No.</th>
-                <th className="py-4">Course No.</th>
+                <th className="py-4">Class Name</th>
                 <th className="py-4">Time</th>
                 <th className="py-4">Days</th>
                 <th className="py-4">Room</th>
@@ -119,24 +119,24 @@ const ManageClassesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredClasses.map((course, index) => (
+              {filteredClasses.map((cls, index) => (
                 <tr key={index} className="border-b border-gray-200 last:border-b-0">
-                  <td className="py-4 font-semibold text-gray-900">{course.schedNo || 'N/A'}</td>
-                  <td className="py-4 text-gray-500">{course.courseNo}</td>
-                  <td className="py-4 text-gray-500">{course.time || 'N/A'}</td>
-                  <td className="py-4 text-gray-500">{course.days || 'N/A'}</td>
-                  <td className="py-4 text-gray-500">{course.room || 'N/A'}</td>
-                  <td className="py-4 text-gray-500">{course.units || 'N/A'}</td>
+                  <td className="py-4 font-semibold text-gray-900">{cls.schedule || 'N/A'}</td>
+                  <td className="py-4 text-gray-500">{cls.name}</td>
+                  <td className="py-4 text-gray-500">{cls.time || 'N/A'}</td>
+                  <td className="py-4 text-gray-500">{cls.days || 'N/A'}</td>
+                  <td className="py-4 text-gray-500">{cls.room || 'N/A'}</td>
+                  <td className="py-4 text-gray-500">{cls.units || 'N/A'}</td>
                   <td className="py-4">
                     <div className="flex gap-4">
                       <button 
-                        onClick={() => handleEditClick(course)}
+                        onClick={() => handleEditClick(cls)}
                         className="text-gray-500 hover:text-gray-800"
                       >
                         <FaEdit />
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(course)}
+                        onClick={() => handleDeleteClick(cls)}
                         className="text-black hover:text-gray-700"
                       >
                         <FaTrash />
@@ -155,14 +155,14 @@ const ManageClassesPage = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
         title="Delete Class"
-        message={`Are you sure you want to delete the class ${courseToDelete?.courseNo}?`}
+        message={`Are you sure you want to delete the class ${classToDelete?.name}?`}
       />
 
       <EditCourseModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleEditSave}
-        course={courseToEdit}
+        course={classToEdit}
       />
 
       <AddCourseModal

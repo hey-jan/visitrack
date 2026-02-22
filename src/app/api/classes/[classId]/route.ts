@@ -11,7 +11,7 @@ export async function GET(
     const classDetails = await prisma.class.findUnique({
       where: { id: classId },
       include: {
-        teacher: {
+        instructor: {
           select: {
             firstName: true,
             lastName: true,
@@ -55,6 +55,25 @@ export async function PUT(
     console.error('Error updating class:', error);
     return NextResponse.json(
       { error: 'An error occurred while updating the class.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ classId: string }> }
+) {
+  try {
+    const { classId } = await params;
+    await prisma.class.delete({
+      where: { id: classId },
+    });
+    return NextResponse.json({ message: 'Class deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting class:', error);
+    return NextResponse.json(
+      { error: 'An error occurred while deleting the class.' },
       { status: 500 }
     );
   }

@@ -3,14 +3,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const TeacherPage = () => {
+const InstructorPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/teacher/dashboard');
+    router.replace('/instructor/dashboard');
   }, [router]);
 
   return null;
 };
 
-export default TeacherPage;
+export default InstructorPage;

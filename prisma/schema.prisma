@@ -14,63 +14,96 @@ model Student {
   id         String   @id @default(cuid())
   firstName  String
   lastName   String
+  email      String?  @unique
+  imageUrl   String?  // Main profile picture URL
   courseId   String
   course     Course   @relation(fields: [courseId], references: [id])
   year       Int
   section    String
+  facialData FacialData[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   Attendance Attendance[]
-  classes    Class[]
+  enrollments Enrollment[]
+}
+
+model FacialData {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id])
+  embedding    String   // Store serialized array (JSON string)
+  thumbnailUrl String?  // URL to the specific face crop used for this embedding
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Course {
   id         String    @id @default(cuid())
   courseNo   String
   courseName String
-  schedNo    String?
-  time       String?
-  days       String?
-  room       String?
-  units      Int?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   students   Student[]
 }
 
-model Teacher {
+model Instructor {
   id        String   @id @default(cuid())
   firstName String
   lastName  String
+  email     String   @unique
   class     Class[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Class {
-  id         String   @id @default(cuid())
-  name       String
-  teacherId  String
-  teacher    Teacher  @relation(fields: [teacherId], references: [id])
-  room       String
-  schedule   String
-  days       String
-  time       String
-  students   Student[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+  room         String
+  schedule     String
+  days         String
+  time         String
+  units        Int?
+  enrollments  Enrollment[]
+  sessions     Session[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Enrollment {
+  student    Student  @relation(fields: [studentId], references: [id])
+  studentId  String
+  class      Class    @relation(fields: [classId], references: [id])
+  classId    String
+  enrolledAt DateTime @default(now())
+
+  @@id([studentId, classId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  date      String
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id])
   Attendance Attendance[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([classId, date])
 }
 
 model Attendance {
-  id        String   @id @default(cuid())
-  date      String
-  status    String
-  time      String
-  student   Student  @relation(fields: [studentId], references: [id])
-  studentId String
-  classId   String
-  class     Class    @relation(fields: [classId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  status      String   // Present, Absent, Late
+  time        String   // Detected check-in time
+  confidence  Float?   // Facial recognition confidence score (0.0 - 1.0)
+  snapshotUrl String?  // URL/Path to the captured face snapshot
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   String
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

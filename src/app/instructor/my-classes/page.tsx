@@ -10,8 +10,8 @@ interface Class {
   schedule: string;
   days: string;
   time: string;
-  students: number;
-  teacher: {
+  students: any[]; // Using array for students count
+  instructor: {
     firstName: string;
     lastName: string;
   };
@@ -36,7 +36,7 @@ const MyClassesPage = () => {
 
   const filteredClasses = classes.filter((classInfo) =>
     classInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${classInfo.teacher.firstName} ${classInfo.teacher.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    `${classInfo.instructor?.firstName} ${classInfo.instructor?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.room.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.days.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.time.toLowerCase().includes(searchQuery.toLowerCase())
@@ -63,7 +63,11 @@ const MyClassesPage = () => {
               <FaBook size={24} />
             </div>
             <h2 className="text-xl font-bold">{classInfo.name}</h2>
-            <p className="text-gray-600 mb-4">{`${classInfo.teacher.firstName} ${classInfo.teacher.lastName}`}</p>
+            <p className="text-gray-600 mb-4">
+              {classInfo.instructor 
+                ? `${classInfo.instructor.firstName} ${classInfo.instructor.lastName}` 
+                : 'No Instructor'}
+            </p>
             
             <div className="text-left w-full">
               <div className="flex justify-between py-1">
@@ -78,13 +82,9 @@ const MyClassesPage = () => {
                 <span className="text-gray-600">Time:</span>
                 <span>{classInfo.time}</span>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">Total Students:</span>
-                <span>{classInfo.students}</span>
-              </div>
             </div>
 
-            <Link href={`/teacher/my-classes/${classInfo.id}`} className="w-full">
+            <Link href={`/instructor/my-classes/${classInfo.id}`} className="w-full">
               <div className="bg-black text-white px-6 py-3 rounded-lg mt-6 w-full">
                 View Attendance
               </div>
