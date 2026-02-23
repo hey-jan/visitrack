@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaArrowLeft, FaCalendarAlt, FaFilter, FaSearch, FaUser, FaFilePdf, FaFileExcel } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaFilter, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaChalkboardTeacher, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
 interface ClassDetails {
@@ -13,6 +13,7 @@ interface ClassDetails {
   schedule: string;
   days: string;
   time: string;
+  units: number;
   students: Student[];
   teacher: {
     firstName: string;
@@ -49,24 +50,39 @@ const AttendancePage = () => {
   const [selectedStudentForExport, setSelectedStudentForExport] = useState('All');
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch class details
         const classRes = await fetch(`/api/classes/${classId}`);
-        const classData: ClassDetails = await classRes.json();
-        setClassDetails(classData);
+        if (classRes.ok) {
+          const classData: ClassDetails = await classRes.json();
+          setClassDetails(classData);
+        } else {
+          console.error('Failed to fetch class details');
+        }
 
         // Fetch available attendance dates
         const datesRes = await fetch(`/api/attendance/dates/${classId}`);
-        const datesData: string[] = await datesRes.json();
-        setAvailableDates(datesData);
-        if (datesData.length > 0) {
-          setSelectedDate(datesData[0]); // Select the most recent date by default
+        if (datesRes.ok) {
+          const datesData = await datesRes.json();
+          if (Array.isArray(datesData)) {
+            setAvailableDates(datesData);
+            if (datesData.length > 0 && !selectedDate) {
+              setSelectedDate(datesData[0]); // Select the most recent date by default
+            }
+          } else {
+            setAvailableDates([]);
+          }
+        } else {
+          console.error('Failed to fetch attendance dates');
+          setAvailableDates([]);
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
+        setAvailableDates([]);
       }
     };
     fetchData();
@@ -75,12 +91,25 @@ const AttendancePage = () => {
   useEffect(() => {
     if (selectedDate && classId) {
       const fetchAttendance = async () => {
+        setIsLoadingAttendance(true);
         try {
-          const attendanceRes = await fetch(`/api/attendance/${classId}?date=${selectedDate}`);
-          const attendanceData: AttendanceRecord[] = await attendanceRes.json();
-          setAttendanceRecords(attendanceData);
+          const attendanceRes = await fetch(`/api/attendance/${classId}?date=${encodeURIComponent(selectedDate)}`);
+          if (attendanceRes.ok) {
+            const attendanceData = await attendanceRes.json();
+            if (Array.isArray(attendanceData)) {
+              setAttendanceRecords(attendanceData);
+            } else {
+              setAttendanceRecords([]);
+            }
+          } else {
+            console.error('Failed to fetch attendance records');
+            setAttendanceRecords([]);
+          }
         } catch (error) {
           console.error('Error fetching attendance records:', error);
+          setAttendanceRecords([]);
+        } finally {
+          setIsLoadingAttendance(false);
         }
       };
       fetchAttendance();
@@ -185,20 +214,73 @@ const AttendancePage = () => {
 
   return (
     <div>
-      <Link href="/teacher/my-classes" className="flex items-center text-gray-500 mb-6">
+      <Link href="/instructor/my-classes" className="inline-flex items-center bg-black text-white px-4 py-2 rounded-lg mb-6 hover:bg-neutral-800 transition-colors">
         <FaArrowLeft className="mr-2" />
         Back to My Classes
       </Link>
 
       {/* Class Header */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <h1 className="text-3xl font-bold">{classDetails.name}</h1>
-        <p className="text-gray-600">
-          Teacher: {`${classDetails.teacher?.firstName} ${classDetails.teacher?.lastName}`}
-        </p>
-        <p className="text-gray-600">
-          Room: {classDetails.room}  Days: {classDetails.days}  Time: {classDetails.time}
-        </p>
+      <div className="bg-white p-10 rounded-3xl shadow-sm mb-8 border border-gray-100 border-l-12 border-l-black overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 rounded-full -mr-32 -mt-32 z-0 opacity-50" />
+        
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-start justify-between gap-12">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-4xl font-black text-black tracking-tighter leading-tight mb-8 wrap-break-word uppercase">
+              {classDetails.name}
+            </h1>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center text-white border-4 border-gray-50 text-sm font-black shadow-sm shrink-0">
+                {classDetails.teacher?.firstName[0]}{classDetails.teacher?.lastName[0]}
+              </div>
+              <div className="flex flex-col">
+                <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.2em] leading-none mb-1.5">Lead Instructor</p>
+                <p className="text-xl font-bold text-black leading-none">{`${classDetails.teacher?.firstName} ${classDetails.teacher?.lastName}`}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-12 gap-y-10 bg-gray-50/50 p-10 rounded-3xl border border-gray-100/50 shrink-0 self-start">
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">Room</p>
+              <div className="flex items-center gap-2.5">
+                <FaMapMarkerAlt className="text-black opacity-40" size={14} />
+                <p className="text-xl font-bold text-black leading-none">{classDetails.room}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">Days</p>
+              <div className="flex items-center gap-2.5">
+                <FaCalendarAlt className="text-black opacity-40" size={14} />
+                <p className="text-xl font-bold text-black leading-none">{classDetails.days}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">Time</p>
+              <div className="flex items-center gap-2.5">
+                <FaClock className="text-black opacity-40" size={14} />
+                <p className="text-xl font-bold text-black leading-none">{classDetails.time}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">Schedule No.</p>
+              <div className="flex items-center gap-2.5">
+                <FaHashtag className="text-black opacity-40" size={14} />
+                <p className="text-xl font-bold text-black leading-none">{classDetails.schedule}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">Units</p>
+              <div className="flex items-center gap-2.5">
+                <FaLayerGroup className="text-black opacity-40" size={14} />
+                <p className="text-xl font-bold text-black leading-none">{classDetails.units}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Buttons */}
@@ -268,15 +350,19 @@ const AttendancePage = () => {
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-4 flex items-center"><FaCalendarAlt className="mr-2"/> Attendance Dates</h2>
             <div className="space-y-2">
-              {availableDates.map((date) => (
-                <button
-                  key={date}
-                  onClick={() => setSelectedDate(date)}
-                  className={`w-full text-left p-3 rounded-lg ${selectedDate === date ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
-                >
-                  {date}
-                </button>
-              ))}
+              {availableDates.length > 0 ? (
+                availableDates.map((date) => (
+                    <button
+                      key={date}
+                      onClick={() => setSelectedDate(date)}
+                      className={`w-full text-left p-3 rounded-lg ${selectedDate === date ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                    >
+                      {date}
+                    </button>
+                  ))
+              ) : (
+                <p className="text-gray-500 italic p-3">No attendance dates found.</p>
+              )}
             </div>
           </div>
         </div>
@@ -285,7 +371,7 @@ const AttendancePage = () => {
         <div className="w-full md:w-3/4">
            <div className="bg-white p-6 rounded-lg shadow-md">
            <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Attendance for {selectedDate}</h2>
+                    <h2 className="text-xl font-semibold">Attendance for {selectedDate || '...'}</h2>
                     <div className="relative">
                         <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
                         <input
@@ -297,22 +383,28 @@ const AttendancePage = () => {
                         />
                     </div>
                 </div>
-                <div className="space-y-3">
-                    {/* Header */}
-                    <div className="hidden md:grid md:grid-cols-3 gap-4 text-left text-gray-600 font-semibold px-4">
-                        <div>Student Name</div>
-                        <div>Status</div>
-                        <div>Time</div>
-                    </div>
-                    {/* Student Rows */}
-                    {filteredStudents.map((record) => (
-                        <div key={record.id} className="grid grid-cols-2 md:grid-cols-3 gap-4 items-center border border-gray-100 rounded-lg p-4">
-                            <div className="font-semibold">{`${record.student.firstName} ${record.student.lastName}`}</div>
-                            <div className="text-gray-800">{record.status}</div>
-                            <div className="text-gray-600">{record.time}</div>
+                {isLoadingAttendance ? (
+                    <div className="text-center py-10 text-gray-500">Loading attendance...</div>
+                ) : attendanceRecords.length > 0 ? (
+                    <div className="space-y-3">
+                        {/* Header */}
+                        <div className="hidden md:grid md:grid-cols-3 gap-4 text-left text-gray-600 font-semibold px-4">
+                            <div>Student Name</div>
+                            <div>Status</div>
+                            <div>Time</div>
                         </div>
-                    ))}
-                </div>
+                        {/* Student Rows */}
+                        {filteredStudents.map((record) => (
+                            <div key={record.id} className="grid grid-cols-2 md:grid-cols-3 gap-4 items-center border border-gray-100 rounded-lg p-4">
+                                <div className="font-semibold">{`${record.student.firstName} ${record.student.lastName}`}</div>
+                                <div className="text-gray-800">{record.status}</div>
+                                <div className="text-gray-600">{record.time}</div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-10 text-gray-500">No attendance records found for this date.</div>
+                )}
             </div>
         </div>
       </div>

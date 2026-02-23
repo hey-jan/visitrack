@@ -8,7 +8,8 @@ export async function GET(
 ) {
   try {
     const { classId } = await params;
-    const classDetails = await prisma.class.findUnique({
+    // Try to find by ID first, then by Slug
+    let classDetails = await prisma.class.findUnique({
       where: { id: classId },
       include: {
         instructor: {
@@ -17,19 +18,57 @@ export async function GET(
             lastName: true,
           },
         },
-        students: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
+        enrollments: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              }
+            }
           }
         }
       },
     });
+
+    if (!classDetails) {
+        classDetails = await prisma.class.findUnique({
+            where: { slug: classId },
+            include: {
+              instructor: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+              enrollments: {
+                include: {
+                  student: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    }
+                  }
+                }
+              }
+            },
+          });
+    }
+
     if (!classDetails) {
       return NextResponse.json({ error: 'Class not found.' }, { status: 404 });
     }
-    return NextResponse.json(classDetails);
+
+    // Flatten enrollments to just students for the frontend
+    const flattenedClassDetails = {
+      ...classDetails,
+      teacher: classDetails.instructor, // Map instructor to teacher
+      students: classDetails.enrollments.map(e => e.student)
+    };
+
+    return NextResponse.json(flattenedClassDetails);
   } catch (error) {
     console.error('Error fetching class:', error);
     return NextResponse.json(

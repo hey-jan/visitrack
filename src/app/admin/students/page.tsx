@@ -2,9 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
-import AddStudentModal from '../components/AddStudentModal';
-import ConfirmationModal from '../components/ConfirmationModal';
-import EditStudentModal from '../components/EditStudentModal';
+import AddStudentModal from '@/components/features/admin/students/AddStudentModal';
+import ConfirmationModal from '@/components/features/shared/ConfirmationModal';
+import EditStudentModal from '@/components/features/admin/students/EditStudentModal';
 
 import { students as studentsData } from '../../../../prisma/seed-data/students';
 
@@ -80,7 +80,7 @@ const ManageStudentsPage = () => {
             </div>
             <div className="relative">
               <select 
-                className="bg-gray-100 border-none rounded-lg pl-4 pr-10 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300 appearance-none"
+                className="w-72 bg-gray-100 border-none rounded-lg pl-4 pr-10 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300 appearance-none"
                 value={selectedCourse}
                 onChange={e => setSelectedCourse(e.target.value)}
               >

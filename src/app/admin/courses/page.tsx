@@ -2,9 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
-import ConfirmationModal from '../components/ConfirmationModal';
-import EditCourseModal from '../components/EditCourseModal';
-import AddCourseModal from '../components/AddCourseModal';
+import ConfirmationModal from '@/components/features/shared/ConfirmationModal';
+import EditClassModal from '@/components/features/admin/classes/EditClassModal';
+import AddClassModal from '@/components/features/admin/classes/AddClassModal';
 
 const ManageClassesPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -158,14 +158,14 @@ const ManageClassesPage = () => {
         message={`Are you sure you want to delete the class ${classToDelete?.name}?`}
       />
 
-      <EditCourseModal
+      <EditClassModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleEditSave}
         course={classToEdit}
       />
 
-      <AddCourseModal
+      <AddClassModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAddSave}

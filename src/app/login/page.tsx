@@ -1,23 +1,80 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import EyeIcon from './components/EyeIcon';
+import EyeIcon from '@/components/ui/icons/EyeIcon';
 
 const LoginPage = () => {
-  const [accountType, setAccountType] = useState('admin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [accountType, setAccountType] = useState('instructor');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.role === 'admin') {
+            router.push('/admin');
+          } else {
+            router.push('/instructor/dashboard');
+          }
+        } else {
+          setCheckingSession(false);
+        }
+      } catch (err) {
+        setCheckingSession(false);
+      }
+    };
+    checkSession();
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (accountType === 'admin') {
-      router.push('/admin');
+    setError('');
+
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
     }
-    else {
-      router.push('/instructor/dashboard');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, accountType }),
+      });
+
+      if (res.ok) {
+        if (accountType === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/instructor/dashboard');
+        }
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Login failed.');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+      console.error(err);
     }
   };
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white p-8">
@@ -29,6 +86,9 @@ const LoginPage = () => {
           An AI-Powered Facial Recognition Attendance System
         </p>
         <form onSubmit={handleLogin}>
+          {error && (
+            <div className="mb-4 text-red-500 text-sm text-center">{error}</div>
+          )}
           <div className="mb-4">
             <label
               htmlFor="email"
@@ -42,29 +102,35 @@ const LoginPage = () => {
               placeholder="Enter your email"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 placeholder-gray-500 text-black"
               autoComplete="off"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="mb-6 relative">
+          <div className="mb-6">
             <label
               htmlFor="password"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Password
             </label>
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter your password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200 placeholder-gray-500 text-black"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-gray-400"
-            >
-              <EyeIcon isOpen={!showPassword} />
-            </button>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200 placeholder-gray-500 text-black pr-12"
+                autoComplete="off"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <EyeIcon isOpen={!showPassword} />
+              </button>
+            </div>
           </div>
           <div className="mb-6">
             <span className="block text-sm font-medium text-gray-700 mb-2">

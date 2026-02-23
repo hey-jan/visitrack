@@ -2,16 +2,34 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+async function resolveClassId(idOrSlug: string) {
+  const classById = await prisma.class.findUnique({
+    where: { id: idOrSlug },
+    select: { id: true }
+  });
+  if (classById) return idOrSlug;
+
+  const classBySlug = await prisma.class.findUnique({
+    where: { slug: idOrSlug },
+    select: { id: true }
+  });
+  return classBySlug?.id || null;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const { classId } = await params;
+    const resolvedId = await resolveClassId(classId);
+    if (!resolvedId) {
+        return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+    }
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
 
-    const whereClause: any = { session: { classId: classId } };
+    const whereClause: any = { session: { classId: resolvedId } };
     if (date) {
       whereClause.session.date = date;
     }
@@ -45,6 +63,10 @@ export async function POST(
 ) {
   try {
     const { classId } = await params;
+    const resolvedId = await resolveClassId(classId);
+    if (!resolvedId) {
+        return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+    }
     const records = await request.json();
 
     if (!records || records.length === 0) {
@@ -58,13 +80,13 @@ export async function POST(
     const session = await prisma.session.upsert({
       where: {
         classId_date: {
-          classId,
+          classId: resolvedId,
           date,
         },
       },
       update: {},
       create: {
-        classId,
+        classId: resolvedId,
         date,
       },
     });

@@ -8,8 +8,29 @@ export async function GET(
 ) {
   try {
     const { classId } = await params;
+
+    // Resolve classId if it's a slug
+    let actualClassId = classId;
+    const classCheck = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { id: true }
+    });
+
+    if (!classCheck) {
+      const classBySlug = await prisma.class.findUnique({
+        where: { slug: classId },
+        select: { id: true }
+      });
+      if (classBySlug) {
+        actualClassId = classBySlug.id;
+      } else {
+        // If it's not a valid ID and not a valid slug, return 404
+        return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+      }
+    }
+
     const sessions = await prisma.session.findMany({
-      where: { classId: classId },
+      where: { classId: actualClassId },
       select: {
         date: true,
       },

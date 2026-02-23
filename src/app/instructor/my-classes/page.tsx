@@ -1,15 +1,17 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaBook, FaSearch } from 'react-icons/fa';
+import { FaBook, FaSearch, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaHashtag, FaLayerGroup } from 'react-icons/fa';
 
 interface Class {
   id: string;
   name: string;
+  slug: string;
   room: string;
   schedule: string;
   days: string;
   time: string;
+  units: number;
   students: any[]; // Using array for students count
   instructor: {
     firstName: string;
@@ -22,16 +24,31 @@ const MyClassesPage = () => {
   const [classes, setClasses] = useState<Class[]>([]);
 
   useEffect(() => {
-    const fetchClasses = async () => {
+    const fetchInstructorAndClasses = async () => {
       try {
-        const res = await fetch('/api/classes');
-        const data = await res.json();
-        setClasses(data);
+        // First, get the current instructor
+        const userRes = await fetch('/api/auth/me');
+        if (!userRes.ok) {
+          // Handle not being logged in, e.g., redirect to login
+          console.error('Not authenticated');
+          // router.push('/login');
+          return;
+        }
+        const instructor = await userRes.json();
+
+        // Then, fetch the classes for that instructor
+        const classesRes = await fetch(`/api/classes?instructorId=${instructor.id}`);
+        if (classesRes.ok) {
+          const data = await classesRes.json();
+          setClasses(data);
+        } else {
+          console.error('Failed to fetch classes');
+        }
       } catch (error) {
-        console.error('Failed to fetch classes:', error);
+        console.error('Failed to fetch data:', error);
       }
     };
-    fetchClasses();
+    fetchInstructorAndClasses();
   }, []);
 
   const filteredClasses = classes.filter((classInfo) =>
@@ -56,36 +73,33 @@ const MyClassesPage = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredClasses.map((classInfo, index) => (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-            <div className="bg-black text-white p-4 rounded-lg mb-4">
-              <FaBook size={24} />
-            </div>
-            <h2 className="text-xl font-bold">{classInfo.name}</h2>
-            <p className="text-gray-600 mb-4">
-              {classInfo.instructor 
-                ? `${classInfo.instructor.firstName} ${classInfo.instructor.lastName}` 
-                : 'No Instructor'}
-            </p>
-            
-            <div className="text-left w-full">
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">Room:</span>
-                <span>{classInfo.room}</span>
+          <div key={index} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 border-l-12 border-l-black flex flex-col justify-between hover:shadow-md transition-all">
+            <div>
+              <div className="flex justify-between items-start gap-4 mb-8">
+                <h2 className="text-2xl font-black text-black tracking-tighter leading-tight wrap-break-word uppercase flex-1">
+                  {classInfo.name}
+                </h2>
+                <span className="bg-black/5 text-black text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest whitespace-nowrap">
+                  #{classInfo.schedule}
+                </span>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">Days:</span>
-                <span>{classInfo.days}</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">Time:</span>
-                <span>{classInfo.time}</span>
+
+              <div className="flex flex-wrap gap-4 mb-10">
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                  <FaCalendarAlt size={10} className="text-black opacity-40" />
+                  <span className="text-[10px] font-bold text-black uppercase tracking-wider">{classInfo.days}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                  <FaClock size={10} className="text-black opacity-40" />
+                  <span className="text-[10px] font-bold text-black uppercase tracking-wider">{classInfo.time}</span>
+                </div>
               </div>
             </div>
 
-            <Link href={`/instructor/my-classes/${classInfo.id}`} className="w-full">
-              <div className="bg-black text-white px-6 py-3 rounded-lg mt-6 w-full">
+            <Link href={`/instructor/my-classes/${classInfo.slug}`} className="block w-full">
+              <div className="bg-black text-white text-center py-4 rounded-2xl font-black hover:bg-neutral-800 transition-all uppercase tracking-widest text-[10px] shadow-sm active:scale-[0.98]">
                 View Attendance
               </div>
             </Link>
@@ -97,3 +111,4 @@ const MyClassesPage = () => {
 };
 
 export default MyClassesPage;
+

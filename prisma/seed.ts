@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import slugify from 'slugify';
 import { students as studentsData } from './seed-data/students.ts';
 import { courses as coursesData } from './seed-data/courses.ts';
 import { classes as classesData } from './seed-data/classes.ts';
 import { instructors as instructorsData } from './seed-data/instructor.ts';
+import { admins as adminsData } from './seed-data/admin.ts';
 import { attendanceData } from './seed-data/attendanceData.ts';
 
 const prisma = new PrismaClient();
@@ -20,7 +22,13 @@ interface StudentData {
 
 async function main() {
   console.log('Start seeding ...');
-// ... rest of the code ...
+
+  // Seed Admins
+  for (const admin of adminsData) {
+    await prisma.admin.create({
+      data: admin,
+    });
+  }
 
   // Seed Courses
   const courseMap = new Map();
@@ -54,6 +62,7 @@ async function main() {
     const createdClass = await prisma.class.create({
       data: {
         name: aClass.name,
+        slug: slugify(aClass.name, { lower: true }),
         instructorId: instructor.id,
         room: aClass.room,
         schedule: aClass.schedule,
