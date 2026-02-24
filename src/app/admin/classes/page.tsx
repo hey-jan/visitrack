@@ -1,13 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
-import ConfirmationModal from '../components/ConfirmationModal';
-import EditClassModal from '../components/EditClassModal';
-
-import AddClassModal from '../components/AddClassModal';
-
-import { courses as classesData } from '@/data/classes';
+import ConfirmationModal from '@/components/features/shared/ConfirmationModal';
+import EditClassModal from '@/components/features/admin/classes/EditClassModal';
+import AddClassModal from '@/components/features/admin/classes/AddClassModal';
 
 const ManageClassesPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -16,37 +13,65 @@ const ManageClassesPage = () => {
   const [classToEdit, setClassToEdit] = useState<any>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [classes, setClasses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const classes = useMemo(() => classesData, []);
+  const fetchClasses = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/classes');
+      const data = await res.json();
+      setClasses(data);
+    } catch (error) {
+      console.error('Failed to fetch classes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
   const filteredClasses = useMemo(() =>
-    classes.filter(classItem =>
-      classItem.courseNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      classItem.schedNo.toLowerCase().includes(searchTerm.toLowerCase())
+    classes.filter(cls =>
+      (cls.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (cls.schedule?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
     ),
     [classes, searchTerm]
   );
 
-  const handleDeleteClick = (classItem: any) => {
-    setClassToDelete(classItem);
+  const handleDeleteClick = (cls: any) => {
+    setClassToDelete(cls);
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    console.log('Deleting class:', classToDelete);
-    // Here you would typically make an API call to delete the class
-    setIsDeleteModalOpen(false);
-    setClassToDelete(null);
+  const handleDeleteConfirm = async () => {
+    if (!classToDelete) return;
+    try {
+      const res = await fetch(`/api/classes/${classToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchClasses();
+      } else {
+        console.error('Failed to delete class');
+      }
+    } catch (error) {
+      console.error('Error deleting class:', error);
+    } finally {
+      setIsDeleteModalOpen(false);
+      setClassToDelete(null);
+    }
   };
 
-  const handleEditClick = (classItem: any) => {
-    setClassToEdit(classItem);
+  const handleEditClick = (cls: any) => {
+    setClassToEdit(cls);
     setIsEditModalOpen(true);
   };
 
   const handleEditSave = (updatedClass: any) => {
-    console.log('Updating class:', updatedClass);
-    // Here you would typically make an API call to update the class
+    fetchClasses();
     setIsEditModalOpen(false);
     setClassToEdit(null);
   };
@@ -56,96 +81,117 @@ const ManageClassesPage = () => {
   };
 
   const handleAddSave = (newClass: any) => {
-    console.log('Adding class:', newClass);
-    // Here you would typically make an API call to add the class
+    fetchClasses();
     setIsAddModalOpen(false);
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900">Manage Classes / Subjects</h1>
-        <p className="text-gray-500">Add, edit, or remove class records</p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Class Management</h1>
+        <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">Course Scheduling & Logistics</p>
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative w-full max-w-md">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 bg-gray-50/30 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="relative w-full md:w-96">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-black opacity-30" />
             <input
               type="text"
-              placeholder="Search classes..."
-              className="w-full bg-gray-100 border-none rounded-lg pl-12 pr-4 py-3 text-gray-900 focus:ring-2 focus:ring-gray-300"
+              placeholder="Search by name or schedule..."
+              className="w-full bg-white border border-gray-200 rounded-xl pl-11 pr-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-black outline-none transition-all placeholder:text-gray-400 font-medium"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <button
             onClick={handleAddClass}
-            className="bg-black text-white px-6 py-3 rounded-lg flex items-center gap-2"
+            className="w-full md:w-auto bg-black text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all active:scale-95 font-bold text-sm shadow-lg shadow-gray-200"
           >
-            <FaPlus />
-            Add Class
+            <FaPlus size={14} />
+            Create New Class
           </button>
         </div>
 
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-200">
-              <th className="py-4">Sched. No.</th>
-              <th className="py-4">Course No.</th>
-              <th className="py-4">Time</th>
-              <th className="py-4">Days</th>
-              <th className="py-4">Room</th>
-              <th className="py-4">Units</th>
-              <th className="py-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredClasses.map((classItem, index) => (
-              <tr key={index} className="border-b border-gray-200 last:border-b-0">
-                <td className="py-4 font-semibold text-gray-900">{classItem.schedNo}</td>
-                <td className="py-4 text-gray-500">{classItem.courseNo}</td>
-                <td className="py-4 text-gray-500">{classItem.time}</td>
-                <td className="py-4 text-gray-500">{classItem.days}</td>
-                <td className="py-4 text-gray-500">{classItem.room}</td>
-                <td className="py-4 text-gray-500">{classItem.units}</td>
-                <td className="py-4">
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={() => handleEditClick(classItem)}
-                      className="text-gray-500 hover:text-gray-800"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(classItem)}
-                      className="text-black hover:text-gray-700"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-white">
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Sched No.</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Class Name</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Schedule</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Room</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Units</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredClasses.map((cls, index) => (
+                  <tr key={index} className="hover:bg-gray-50/80 transition-colors group">
+                    <td className="px-8 py-5">
+                      <span className="text-xs font-mono font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100 uppercase">{cls.schedule || 'N/A'}</span>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="flex items-center">
+                        <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm">
+                          {cls.name.charAt(0)}
+                        </div>
+                        <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{cls.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5 text-center">
+                      <p className="text-sm font-bold text-gray-900 leading-none mb-1">{cls.days || 'N/A'}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{cls.time || 'N/A'}</p>
+                    </td>
+                    <td className="px-8 py-5 text-center text-sm font-bold text-gray-700 uppercase tracking-tight">{cls.room || 'N/A'}</td>
+                    <td className="px-8 py-5 text-center text-sm font-medium text-gray-600">{cls.units || '0'}</td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditClick(cls)}
+                          className="p-2 text-black hover:bg-gray-200 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <FaEdit size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(cls)}
+                          className="p-2 text-black hover:bg-gray-200 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <FaTrash size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title="Delete Class"
-        message={`Are you sure you want to delete the class ${classToDelete?.courseNo}?`}
+        title="Archive Class"
+        message={`Confirm deletion of ${classToDelete?.name} from course registry.`}
       />
 
-      <EditClassModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleEditSave}
-        classItem={classToEdit}
-      />
+      {classToEdit && (
+        <EditClassModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleEditSave}
+          course={classToEdit}
+        />
+      )}
 
       <AddClassModal
         isOpen={isAddModalOpen}

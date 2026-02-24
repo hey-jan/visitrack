@@ -1,75 +1,121 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model Student {
-  id           String    @id @default(uuid())
-  firstName    String
-  lastName     String
-  class        String
-  year         Int
-  section      String
-  frontPhotoUrl String?
-  leftPhotoUrl String?
-  rightPhotoUrl String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  attendances  Attendance[]
+  id         String   @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String?  @unique
+  imageUrl   String?  // Main profile picture URL
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  year       Int
+  section    String
+  facialData FacialData[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Attendance Attendance[]
+  enrollments Enrollment[]
+}
+
+model FacialData {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id])
+  embedding    String   // Store serialized array (JSON string)
+  thumbnailUrl String?  // URL to the specific face crop used for this embedding
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Course {
+  id         String    @id @default(cuid())
+  courseNo   String
+  courseName String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  students   Student[]
+}
+
+model Instructor {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+  class     Class[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Class {
-  id         String    @id @default(uuid())
-  schedNo    String    @unique
-  courseNo   String
-  time       String
-  days       String
-  room       String
-  units      Int
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  attendances Attendance[]
-  teacherId   String?
-  teacher     User?    @relation(fields: [teacherId], references: [id])
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+  room         String
+  schedule     String
+  days         String
+  time         String
+  units        Int?
+  enrollments  Enrollment[]
+  sessions     Session[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Enrollment {
+  student    Student  @relation(fields: [studentId], references: [id])
+  studentId  String
+  class      Class    @relation(fields: [classId], references: [id])
+  classId    String
+  enrolledAt DateTime @default(now())
+
+  @@id([studentId, classId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  date      String
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id])
+  Attendance Attendance[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([classId, date])
 }
 
 model Attendance {
-  id         String    @id @default(uuid())
-  student    Student   @relation(fields: [studentId], references: [id])
-  studentId  String
-  class      Class     @relation(fields: [classId], references: [id])
-  classId    String
-  date       DateTime
-  isPresent  Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  @@unique([studentId, classId, date]) // A student can only have one attendance record per course per day
-}
-
-enum Role {
-  ADMIN
-  TEACHER
-}
-
-model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
-  password   String
-  firstName  String
-  lastName   String
-  department String?
-  role       Role     @default(TEACHER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  classes    Class[]
+  id          String   @id @default(cuid())
+  status      String   // Present, Absent, Late
+  time        String   // Detected check-in time
+  confidence  Float?   // Facial recognition confidence score (0.0 - 1.0)
+  snapshotUrl String?  // URL/Path to the captured face snapshot
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   String
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
