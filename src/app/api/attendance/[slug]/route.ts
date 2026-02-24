@@ -1,4 +1,4 @@
-// src/app/api/attendance/[classId]/route.ts
+// src/app/api/attendance/[slug]/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -18,11 +18,11 @@ async function resolveClassId(idOrSlug: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ classId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { classId } = await params;
-    const resolvedId = await resolveClassId(classId);
+    const { slug } = await params;
+    const resolvedId = await resolveClassId(slug);
     if (!resolvedId) {
         return NextResponse.json({ error: 'Class not found' }, { status: 404 });
     }
@@ -59,11 +59,11 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ classId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { classId } = await params;
-    const resolvedId = await resolveClassId(classId);
+    const { slug } = await params;
+    const resolvedId = await resolveClassId(slug);
     if (!resolvedId) {
         return NextResponse.json({ error: 'Class not found' }, { status: 404 });
     }

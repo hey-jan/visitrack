@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaCalendarAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaExclamationTriangle, FaArrowRight } from 'react-icons/fa';
 
 const DashboardPage = () => {
   const [currentDate, setCurrentDate] = useState('');
@@ -16,22 +16,18 @@ const DashboardPage = () => {
 
     const fetchData = async () => {
       try {
-        // 1. Get current instructor
         const meRes = await fetch('/api/auth/me');
         if (!meRes.ok) throw new Error('Failed to fetch instructor info');
         const instructorData = await meRes.json();
         setInstructor(instructorData);
 
-        // 2. Get classes for this instructor
         const classesRes = await fetch(`/api/classes?instructorId=${instructorData.id}`);
         if (!classesRes.ok) throw new Error('Failed to fetch classes');
         const allInstructorClasses = await classesRes.json();
 
-        // 3. Filter for today
         const dayAbbreviation = getDayAbbreviation(today.getDay());
         const filteredClasses = allInstructorClasses.filter((c: any) => {
           if (dayAbbreviation === 'T') {
-            // Match 'T' but not 'TH'
             return c.days.replace(/TH/g, '').includes('T');
           }
           return c.days.includes(dayAbbreviation);
@@ -49,96 +45,99 @@ const DashboardPage = () => {
   }, []);
 
   const getDayAbbreviation = (dayIndex: number) => {
-    // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const mapping: { [key: number]: string } = {
-      1: 'M',
-      2: 'T',
-      3: 'W',
-      4: 'TH',
-      5: 'F',
-      6: 'S',
-      0: 'SUN', // Just in case
+      1: 'M', 2: 'T', 3: 'W', 4: 'TH', 5: 'F', 6: 'S', 0: 'SUN',
     };
     return mapping[dayIndex] || '';
   };
 
   const absentStudents = [
-    {
-      name: 'Pedro Reyes',
-      absences: 4,
-      subjects: 'CS-PRACT41',
-    },
-    {
-      name: 'Miguel Ramos',
-      absences: 4,
-      subjects: 'CS-PRACT41',
-    },
-    {
-      name: 'Olivia Gomez',
-      absences: 4,
-      subjects: 'CS-FRELEAN',
-    },
-    {
-      name: 'Diego Martinez',
-      absences: 3,
-      subjects: 'CS-FRELEAN',
-    },
+    { name: 'Pedro Reyes', absences: 4, subjects: 'CS-PRACT41' },
+    { name: 'Miguel Ramos', absences: 4, subjects: 'CS-PRACT41' },
+    { name: 'Olivia Gomez', absences: 4, subjects: 'CS-FRELEAN' },
+    { name: 'Diego Martinez', absences: 3, subjects: 'CS-FRELEAN' },
   ];
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">Dashboard</h1>
-        <div className="flex items-center text-lg">
-          <FaCalendarAlt className="mr-2" />
-          <span>{currentDate}</span>
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Instructor Console</h1>
+          <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider flex items-center">
+            Welcome back, Prof. {instructor?.lastName}
+          </p>
+        </div>
+        <div className="flex items-center px-4 py-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <FaCalendarAlt className="mr-3 text-black opacity-30" size={14} />
+          <span className="text-xs font-bold text-gray-700 uppercase tracking-widest">{currentDate}</span>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Today's Classes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {todaysClasses.map((course, index) => (
-            <div
-              key={index}
-              className="bg-white border border-gray-100 p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
-            >
-              <div>
-                <h3 className="text-xl font-bold text-black mb-3">{course.name}</h3>
-                <div className="flex items-center gap-3 text-xs font-medium text-gray-500 mb-5">
-                  <span className="bg-gray-100 px-2 py-1 rounded">{course.room}</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">#{course.schedule}</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">{course.units} Units</span>
-                </div>
-              </div>
-              <Link href={`/instructor/my-classes/${course.slug}`}>
-                <div className="bg-black text-white text-sm font-bold text-center py-3 rounded-lg cursor-pointer hover:bg-neutral-800 transition-colors">
-                  View Attendance
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Today's Schedule */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-bold text-black uppercase tracking-widest flex items-center">
+              <FaClock className="mr-3" /> Today's Schedule
+            </h2>
+            <span className="text-[10px] font-bold bg-black text-white px-3 py-1 rounded-full uppercase tracking-tighter">
+              {todaysClasses.length} Active
+            </span>
+          </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">
-          Students with 3+ Absences (All Subjects)
-        </h2>
-        <div className="space-y-4">
-          {absentStudents.map((student, index) => (
-            <div
-              key={index}
-              className="flex justify-between items-center p-4 border border-gray-200 rounded-lg"
-            >
-              <div>
-                <h3 className="text-xl font-bold">{student.name}</h3>
-                <p className="text-gray-600">
-                  Absences: {student.absences} Subject: {student.subjects}
-                </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {todaysClasses.length > 0 ? (
+              todaysClasses.map((course, index) => (
+                <div key={index} className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm hover:border-black transition-all flex flex-col group">
+                  <div className="mb-6">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Room {course.room}</span>
+                    <h3 className="text-xl font-bold text-black uppercase tracking-tight leading-tight group-hover:tracking-normal transition-all">{course.name}</h3>
+                    <p className="text-xs font-bold text-gray-500 mt-2 flex items-center">
+                      <span className="w-1.5 h-1.5 bg-black rounded-full mr-2"></span>
+                      {course.time}
+                    </p>
+                  </div>
+                  <Link href={`/instructor/my-classes/${course.slug}`} className="mt-auto">
+                    <div className="bg-gray-50 text-black text-[10px] font-bold uppercase tracking-[0.2em] text-center py-3.5 rounded-xl border border-gray-100 group-hover:bg-black group-hover:text-white group-hover:border-black transition-all flex items-center justify-center gap-2">
+                      Initialize Session <FaArrowRight size={10} />
+                    </div>
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center">
+                <FaCalendarAlt className="text-gray-200 mb-4" size={32} />
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No classes scheduled for today.</p>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Alerts Sidebar */}
+        <div className="space-y-6">
+          <h2 className="text-sm font-bold text-black uppercase tracking-widest flex items-center px-1">
+            <FaExclamationTriangle className="mr-3" /> Attendance Alerts
+          </h2>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="divide-y divide-gray-50">
+              {absentStudents.map((student, index) => (
+                <div key={index} className="p-5 hover:bg-gray-50 transition-colors">
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="font-bold text-gray-900 text-sm">{student.name}</p>
+                    <span className="bg-red-50 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Critical</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 font-medium">
+                    <span className="font-bold text-black">{student.absences} Absences</span> in {student.subjects}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
+            <div className="p-4 bg-gray-50 text-center border-t border-gray-100">
+              <button className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black transition-colors">
+                View All Records
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

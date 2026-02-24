@@ -6,7 +6,12 @@ export async function GET() {
   try {
     const students = await prisma.student.findMany({
       include: {
-        course: true, // Include the related course data
+        course: true,
+        enrollments: {
+          include: {
+            class: true
+          }
+        }
       },
     });
     return NextResponse.json(students);

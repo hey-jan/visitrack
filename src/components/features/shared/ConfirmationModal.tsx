@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Modal from '@/components/ui/Modal';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -11,34 +12,29 @@ interface ConfirmationModalProps {
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
-        <p className="text-gray-600 mb-6">
-          <span>{message}</span>
-          <span className="block">This action cannot be undone.</span>
-        </p>
-        <div className="flex justify-end gap-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800"
-          >
-            Delete
-          </button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+      <p className="text-black mb-8 leading-relaxed font-medium">
+        {message}
+        <span className="block mt-2 font-bold">This action cannot be undone.</span>
+      </p>
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition-all active:scale-[0.98]"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-xl shadow-black/10 active:scale-[0.98]"
+        >
+          Confirm Delete
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 };
 

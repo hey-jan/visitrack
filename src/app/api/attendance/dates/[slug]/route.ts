@@ -1,24 +1,24 @@
-// src/app/api/attendance/dates/[classId]/route.ts
+// src/app/api/attendance/dates/[slug]/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ classId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { classId } = await params;
+    const { slug } = await params;
 
-    // Resolve classId if it's a slug
-    let actualClassId = classId;
+    // Resolve classId if it's a slug or use it directly if it's an ID
+    let actualClassId = slug;
     const classCheck = await prisma.class.findUnique({
-      where: { id: classId },
+      where: { id: slug },
       select: { id: true }
     });
 
     if (!classCheck) {
       const classBySlug = await prisma.class.findUnique({
-        where: { slug: classId },
+        where: { slug: slug },
         select: { id: true }
       });
       if (classBySlug) {

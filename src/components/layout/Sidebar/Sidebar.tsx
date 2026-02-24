@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaHome, FaUserGraduate, FaBook, FaCog, FaSignOutAlt, FaGraduationCap } from 'react-icons/fa';
-import { IconType } from 'react-icons';
+import { FaHome, FaUserGraduate, FaBook, FaCog, FaSignOutAlt, FaGraduationCap, FaUserTie } from 'react-icons/fa';
 
 interface NavLink {
   href: string;
@@ -25,7 +24,8 @@ interface UserProfile {
 const adminLinks: NavLink[] = [
   { href: '/admin', label: 'Dashboard', icon: FaHome },
   { href: '/admin/students', label: 'Manage Students', icon: FaUserGraduate },
-  { href: '/admin/courses', label: 'Manage Classes', icon: FaBook },
+  { href: '/admin/instructors', label: 'Manage Instructors', icon: FaUserTie },
+  { href: '/admin/classes', label: 'Manage Classes', icon: FaBook },
   { href: '/admin/settings', label: 'Settings', icon: FaCog },
 ];
 

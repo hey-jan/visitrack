@@ -33,10 +33,22 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const data = await request.json();
+    const body = await request.json();
+    
+    // Pick only the fields that exist in the Student model
+    const { firstName, lastName, email, imageUrl, courseId, year, section } = body;
+    
     const updatedStudent = await prisma.student.update({
       where: { id: id },
-      data,
+      data: {
+        firstName,
+        lastName,
+        email,
+        imageUrl,
+        courseId,
+        year: year ? parseInt(year.toString()) : undefined,
+        section,
+      },
     });
     return NextResponse.json(updatedStudent);
   } catch (error) {
@@ -54,9 +66,19 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await prisma.student.delete({
-      where: { id: id },
-    });
+
+    // Use a transaction to ensure all related data is cleaned up
+    await prisma.$transaction([
+      // 1. Delete Facial Data
+      prisma.facialData.deleteMany({ where: { studentId: id } }),
+      // 2. Delete Attendance records
+      prisma.attendance.deleteMany({ where: { studentId: id } }),
+      // 3. Delete Enrollments
+      prisma.enrollment.deleteMany({ where: { studentId: id } }),
+      // 4. Finally, delete the Student
+      prisma.student.delete({ where: { id: id } }),
+    ]);
+
     return NextResponse.json({ message: 'Student deleted successfully.' }, { status: 200 });
   } catch (error) {
     console.error('Error deleting student:', error);

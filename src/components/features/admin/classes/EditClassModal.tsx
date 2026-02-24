@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Modal from '@/components/ui/Modal';
 
 interface EditClassModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedClass: any) => void;
-  course: any; // Using 'course' prop name to avoid breaking parent for now, but it contains class data
+  course: any; 
 }
 
 const EditClassModal: React.FC<EditClassModalProps> = ({ isOpen, onClose, onSave, course: cls }) => {
@@ -46,101 +47,107 @@ const EditClassModal: React.FC<EditClassModalProps> = ({ isOpen, onClose, onSave
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Class</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Sched. No.</label>
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Class Details">
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Schedule No.</label>
             <input
               type="text"
               name="schedule"
               required
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
+              placeholder="e.g. 12345"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
               value={formData.schedule || ''}
               onChange={handleChange}
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Class Name</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Class Name</label>
             <input
               type="text"
               name="name"
               required
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
+              placeholder="e.g. CS 101"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
               value={formData.name || ''}
               onChange={handleChange}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Time</label>
-              <input
-                type="text"
-                name="time"
-                required
-                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.time || ''}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Days</label>
-              <input
-                type="text"
-                name="days"
-                required
-                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.days || ''}
-                onChange={handleChange}
-              />
-            </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Time</label>
+            <input
+              type="text"
+              name="time"
+              required
+              placeholder="e.g. 9:00 AM"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
+              value={formData.time || ''}
+              onChange={handleChange}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Room</label>
-              <input
-                type="text"
-                name="room"
-                required
-                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.room || ''}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Units</label>
-              <input
-                type="number"
-                name="units"
-                required
-                className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-                value={formData.units || ''}
-                onChange={handleChange}
-              />
-            </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Days</label>
+            <input
+              type="text"
+              name="days"
+              required
+              placeholder="e.g. MWF"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
+              value={formData.days || ''}
+              onChange={handleChange}
+            />
           </div>
-          <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-black text-white px-6 py-3 rounded-lg"
-            >
-              Save Changes
-            </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Room</label>
+            <input
+              type="text"
+              name="room"
+              required
+              placeholder="e.g. Lab 1"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
+              value={formData.room || ''}
+              onChange={handleChange}
+            />
           </div>
-        </form>
-      </div>
-    </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Units</label>
+            <input
+              type="number"
+              name="units"
+              required
+              placeholder="e.g. 3"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
+              value={formData.units || ''}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition-all active:scale-[0.98]"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="bg-black text-white px-10 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-xl shadow-black/10 active:scale-[0.98]"
+          >
+            Update Class
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

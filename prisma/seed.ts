@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import slugify from 'slugify';
+import bcrypt from 'bcrypt';
 import { students as studentsData } from './seed-data/students.ts';
 import { courses as coursesData } from './seed-data/courses.ts';
 import { classes as classesData } from './seed-data/classes.ts';
@@ -25,8 +26,12 @@ async function main() {
 
   // Seed Admins
   for (const admin of adminsData) {
+    const hashedPassword = await bcrypt.hash(admin.password, 10);
     await prisma.admin.create({
-      data: admin,
+      data: {
+        ...admin,
+        password: hashedPassword,
+      },
     });
   }
 
@@ -45,8 +50,12 @@ async function main() {
   // Seed Instructors
   const instructorMap = new Map();
   for (const instructor of instructorsData) {
+    const hashedPassword = await bcrypt.hash(instructor.password, 10);
     const createdInstructor = await prisma.instructor.create({
-      data: instructor,
+      data: {
+        ...instructor,
+        password: hashedPassword,
+      },
     });
     instructorMap.set(instructor.email, createdInstructor);
   }

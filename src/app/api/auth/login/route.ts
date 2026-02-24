@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import bcrypt from 'bcrypt';
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,12 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!user || user.password !== password) {
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
     }
 

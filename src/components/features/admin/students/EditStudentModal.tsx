@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Modal from '@/components/ui/Modal';
 
 interface EditStudentModalProps {
   isOpen: boolean;
@@ -37,8 +38,6 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
@@ -70,79 +69,94 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
 
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Student</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Student Profile">
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">First Name</label>
             <input
               type="text"
               name="firstName"
-              placeholder="First Name"
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
+              required
+              placeholder="e.g. John"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
               value={formData?.firstName || ''}
               onChange={handleChange}
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Last Name</label>
             <input
               type="text"
               name="lastName"
-              placeholder="Last Name"
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
+              required
+              placeholder="e.g. Doe"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
               value={formData?.lastName || ''}
               onChange={handleChange}
             />
           </div>
-          <div className="mb-6">
-            <select
-              name="courseId"
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
-              onChange={handleChange}
-              value={formData?.courseId || ''}
-            >
-              <option value="">Select a Course</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.courseName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        </div>
+        <div className="flex flex-col gap-1 mb-4">
+          <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Academic Program</label>
+          <select
+            name="courseId"
+            required
+            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 transition-all appearance-none"
+            onChange={handleChange}
+            value={formData?.courseId || ''}
+          >
+            <option value="">Select a Program</option>
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.courseName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Year Level</label>
             <input
               type="text"
               name="year"
-              placeholder="Year"
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
+              required
+              placeholder="e.g. 1"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
               value={formData?.year || ''}
               onChange={handleChange}
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Section</label>
             <input
               type="text"
               name="section"
-              placeholder="Section"
-              className="w-full bg-gray-100 border-none rounded-lg px-4 py-3 text-gray-900"
+              required
+              placeholder="e.g. A"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
               value={formData?.section || ''}
               onChange={handleChange}
             />
           </div>
-          <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-black text-white px-6 py-3 rounded-lg"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition-all active:scale-[0.98]"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="bg-black text-white px-10 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-xl shadow-black/10 active:scale-[0.98]"
+          >
+            Update Record
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

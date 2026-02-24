@@ -1,6 +1,7 @@
 // src/app/api/classes/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import slugify from 'slugify';
 
 export async function GET(request: Request) {
   try {
@@ -43,15 +44,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Generate a slug from the name
+    const slug = slugify(name, { lower: true, strict: true });
+
     const newClass = await prisma.class.create({
       data: {
         name,
+        slug,
         instructorId,
         room,
         schedule,
         days,
         time,
-        units: units ? parseInt(units) : null,
+        units: units ? parseInt(units.toString()) : null,
       },
       include: {
         instructor: {
@@ -66,6 +71,15 @@ export async function POST(request: Request) {
     return NextResponse.json(newClass, { status: 201 });
   } catch (error) {
     console.error('Error creating class:', error);
+    
+    // Handle unique constraint violation for slug
+    if ((error as any).code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A class with this name already exists.' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'An error occurred while creating the class.' },
       { status: 500 }
