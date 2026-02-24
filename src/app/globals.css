@@ -8,7 +8,7 @@
   --border: #e5e7eb;
 }
 
-@theme inline {
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
