@@ -10,7 +10,13 @@ export async function saveBase64Image(base64Data: string, subDir: 'facial-data' 
 
     const fileName = `${uuidv4()}.jpg`;
     const relativePath = `/uploads/${subDir}/${fileName}`;
-    const absolutePath = path.join(process.cwd(), 'public', 'uploads', subDir, fileName);
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', subDir);
+    const absolutePath = path.join(uploadDir, fileName);
+
+    // Ensure directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
 
     fs.writeFileSync(absolutePath, base64Image, { encoding: 'base64' });
 

@@ -27,8 +27,10 @@ const TakeAttendancePage = () => {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [detectedStudents, setDetectedStudents] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [recognitionResults, setRecognitionResults] = useState<any[]>([]);
   
   const webcamRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const fetchClass = async () => {
@@ -47,12 +49,120 @@ const TakeAttendancePage = () => {
     fetchClass();
   }, [slug]);
 
-  const toggleSession = () => {
+  // Recognition Interval
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    const captureRecognition = async () => {
+      if (!webcamRef.current || !isSessionActive || !classDetails) return;
+
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (!imageSrc) return;
+
+      try {
+        // Convert base64 to blob
+        const res = await fetch(imageSrc);
+        const blob = await res.blob();
+        
+        const formData = new FormData();
+        formData.append('file', blob, 'capture.jpg');
+        
+        // Only allow students in THIS class
+        const allowedIds = classDetails.students.map(s => s.firstName.toLowerCase()).join(',');
+        formData.append('allowed_ids', allowedIds);
+
+        const recognizeRes = await fetch('http://localhost:8001/recognize', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (recognizeRes.ok) {
+          const data = await recognizeRes.json();
+          setRecognitionResults(data.results);
+          
+          // Update detected students
+          data.results.forEach((result: any) => {
+            if (result.name !== "Unknown") {
+              // Match result.name with student firstName/lastName
+              const student = classDetails.students.find(
+                s => `${s.firstName.toLowerCase()}` === result.name.toLowerCase() || 
+                     `${s.firstName.toLowerCase()}_${s.lastName.toLowerCase()}` === result.name.toLowerCase() ||
+                     s.id === result.name
+              );
+              
+              if (student) {
+                setDetectedStudents(prev => new Set([...Array.from(prev), student.id]));
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Recognition API error:', error);
+      }
+    };
+
+    if (isSessionActive) {
+      interval = setInterval(captureRecognition, 2000); // Run every 2 seconds
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+      setRecognitionResults([]);
+    };
+  }, [isSessionActive, classDetails, slug]);
+
+  // Drawing Canvas Overlay
+  useEffect(() => {
+    if (!canvasRef.current || !webcamRef.current) return;
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.width);
+
+    if (recognitionResults.length > 0) {
+      recognitionResults.forEach(result => {
+        const [x1, y1, x2, y2] = result.bbox;
+        const width = x2 - x1;
+        const height = y2 - y1;
+
+        // Draw box
+        ctx.strokeStyle = result.name === "Unknown" ? '#ef4444' : '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x1, y1, width, height);
+
+        // Draw label background
+        ctx.fillStyle = result.name === "Unknown" ? '#ef4444' : '#22c55e';
+        const label = `${result.name} (${Math.round(result.confidence * 100)}%)`;
+        const textWidth = ctx.measureText(label).width;
+        ctx.fillRect(x1, y1 - 25, textWidth + 10, 25);
+
+        // Draw text
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.fillText(label, x1 + 5, y1 - 8);
+      });
+    }
+  }, [recognitionResults]);
+
+  const toggleSession = async () => {
+    if (!isSessionActive) {
+      // Sync the backend with the database before starting
+      try {
+        await fetch('http://localhost:8000/sync', { method: 'POST' });
+      } catch (error) {
+        console.error('Failed to sync recognition backend:', error);
+      }
+    }
     setIsSessionActive(!isSessionActive);
   };
 
   const handleFinishSession = async () => {
     if (!classDetails) return;
+
+    setIsSessionActive(false); // Stop the interval first
+    setRecognitionResults([]); // Clear visuals immediately
 
     const today = new Date().toISOString().split('T')[0];
     const attendanceRecords = classDetails.students.map(student => ({
@@ -124,6 +234,12 @@ const TakeAttendancePage = () => {
                   screenshotFormat="image/jpeg"
                   className="w-full h-full object-cover"
                 />
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  width={640}
+                  height={480}
+                />
                 <div className="absolute inset-0 border-2 border-black/20 pointer-events-none animate-pulse"></div>
                 <div className="absolute top-6 left-6 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
@@ -139,7 +255,7 @@ const TakeAttendancePage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[500px]">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-125">
           <div className="p-6 border-b border-gray-50 bg-gray-50/50">
             <h2 className="text-xs font-black text-black uppercase tracking-widest flex items-center">
               <FaUserCheck className="mr-3" /> Detected Students

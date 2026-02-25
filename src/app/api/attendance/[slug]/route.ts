@@ -97,9 +97,9 @@ export async function POST(
         prisma.attendance.create({
           data: {
             status: record.status,
-            time: record.time,
-            studentId: record.studentId,
-            sessionId: session.id,
+            time: record.time || "",
+            student: { connect: { id: record.studentId } },
+            session: { connect: { id: session.id } },
             confidence: record.confidence ? parseFloat(record.confidence) : null,
             snapshotUrl: record.snapshotUrl || null,
           },

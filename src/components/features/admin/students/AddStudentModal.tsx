@@ -108,11 +108,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
           const data = await res.json();
           return {
             embedding: JSON.stringify(Array.from({ length: 128 }, () => Math.random())),
-            thumbnailUrl: data.imageUrl
+            thumbnailUrl: data.imageUrl,
+            key // keep track of which view it is
           };
         });
 
-        facialData = await Promise.all(uploadPromises);
+        const uploadedImages = await Promise.all(uploadPromises);
+        facialData = uploadedImages.map(({ embedding, thumbnailUrl }) => ({ embedding, thumbnailUrl }));
+        
+        // Use the front image as the main profile picture
+        const frontImage = uploadedImages.find(img => img.key === 'front');
+        if (frontImage) {
+          (formData as any).imageUrl = frontImage.thumbnailUrl;
+        }
       }
 
       const response = await fetch('/api/students', {
