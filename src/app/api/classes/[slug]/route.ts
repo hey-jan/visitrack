@@ -15,6 +15,7 @@ export async function GET(
       include: {
         instructor: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
           },
@@ -26,9 +27,18 @@ export async function GET(
                 id: true,
                 firstName: true,
                 lastName: true,
+                email: true,
+                year: true,
+                section: true,
+                course: {
+                  select: {
+                    courseName: true
+                  }
+                },
                 facialData: {
                   select: {
-                    embedding: true
+                    id: true,
+                    thumbnailUrl: true
                   }
                 }
               }
@@ -44,6 +54,7 @@ export async function GET(
             include: {
               instructor: {
                 select: {
+                  id: true,
                   firstName: true,
                   lastName: true,
                 },
@@ -55,6 +66,20 @@ export async function GET(
                       id: true,
                       firstName: true,
                       lastName: true,
+                      email: true,
+                      year: true,
+                      section: true,
+                      course: {
+                        select: {
+                          courseName: true
+                        }
+                      },
+                      facialData: {
+                        select: {
+                          id: true,
+                          thumbnailUrl: true
+                        }
+                      }
                     }
                   }
                 }
@@ -71,7 +96,10 @@ export async function GET(
     const flattenedClassDetails = {
       ...classDetails,
       teacher: classDetails.instructor, // Map instructor to teacher
-      students: classDetails.enrollments.map(e => e.student)
+      students: classDetails.enrollments.map(e => ({
+        ...e.student,
+        courseName: e.student.course?.courseName || 'N/A'
+      }))
     };
 
     return NextResponse.json(flattenedClassDetails);

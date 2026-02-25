@@ -16,9 +16,16 @@ interface Course {
   courseName: string;
 }
 
+interface Class {
+  id: string;
+  name: string;
+}
+
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onStudentAdded }) => {
   const [showCamera, setShowCamera] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [capturedImages, setCapturedImages] = useState<{ front: string; left: string; right: string } | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -40,21 +47,27 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
       });
       setCapturedImages(null);
       setShowCamera(false);
+      setSelectedClasses([]);
     }
   }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      const fetchCourses = async () => {
+      const fetchData = async () => {
         try {
-          const res = await fetch('/api/courses');
-          const data = await res.json();
-          setCourses(data);
+          const [coursesRes, classesRes] = await Promise.all([
+            fetch('/api/courses'),
+            fetch('/api/classes')
+          ]);
+          const coursesData = await coursesRes.json();
+          const classesData = await classesRes.json();
+          setCourses(coursesData);
+          setClasses(classesData);
         } catch (error) {
-          console.error('Failed to fetch courses:', error);
+          console.error('Failed to fetch data:', error);
         }
       };
-      fetchCourses();
+      fetchData();
     }
   }, [isOpen]);
 
@@ -63,6 +76,14 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleClassToggle = (classId: string) => {
+    setSelectedClasses(prev => 
+      prev.includes(classId) 
+        ? prev.filter(id => id !== classId) 
+        : [...prev, classId]
+    );
   };
 
   const handleCapture = (images: { front: string; left: string; right: string }) => {
@@ -102,22 +123,14 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
         body: JSON.stringify({ 
           ...formData, 
           year: parseInt(formData.year),
-          facialData
+          facialData,
+          classIds: selectedClasses
         }),
       });
 
       if (response.ok) {
         onStudentAdded();
         onClose();
-        // Reset form
-        setFormData({
-          firstName: '',
-          lastName: '',
-          courseId: '',
-          year: '',
-          section: '',
-        });
-        setCapturedImages(null);
       } else {
         console.error('Failed to add student');
       }
@@ -158,6 +171,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
               />
             </div>
           </div>
+          
           <div className="flex flex-col gap-1 mb-4">
             <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Academic Program</label>
             <select
@@ -175,6 +189,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
               ))}
             </select>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Year Level</label>
@@ -199,6 +214,30 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
                 onChange={handleChange}
                 value={formData.section}
               />
+            </div>
+          </div>
+
+          {/* Class Enrollment Section */}
+          <div className="mb-6">
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1 block mb-2">Class Enrollment</label>
+            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4 max-h-40 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 gap-2">
+                {classes.length > 0 ? (
+                  classes.map((cls) => (
+                    <label key={cls.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg transition-all cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black transition-all cursor-pointer"
+                        checked={selectedClasses.includes(cls.id)}
+                        onChange={() => handleClassToggle(cls.id)}
+                      />
+                      <span className="text-xs font-bold text-black uppercase tracking-tight">{cls.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-[10px] text-gray-400 italic text-center py-2 uppercase font-bold tracking-widest">No classes available</p>
+                )}
+              </div>
             </div>
           </div>
 

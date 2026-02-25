@@ -27,6 +27,7 @@ const DashboardPage = () => {
 
         const dayAbbreviation = getDayAbbreviation(today.getDay());
         const filteredClasses = allInstructorClasses.filter((c: any) => {
+          if (c.days === 'DAILY') return true;
           if (dayAbbreviation === 'T') {
             return c.days.replace(/TH/g, '').includes('T');
           }

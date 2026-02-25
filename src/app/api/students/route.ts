@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { facialData, ...studentData } = data;
+    const { facialData, classIds, ...studentData } = data;
     
     // Basic validation
     if (!studentData.firstName || !studentData.lastName || !studentData.courseId) {
@@ -46,6 +46,11 @@ export async function POST(request: Request) {
           create: facialData.map((f: any) => ({
             embedding: typeof f.embedding === 'string' ? f.embedding : JSON.stringify(f.embedding),
             thumbnailUrl: f.thumbnailUrl || null,
+          })),
+        } : undefined,
+        enrollments: classIds ? {
+          create: classIds.map((classId: string) => ({
+            classId: classId,
           })),
         } : undefined,
       },

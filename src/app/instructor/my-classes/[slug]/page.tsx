@@ -25,6 +25,10 @@ interface Student {
   id: string;
   firstName: string;
   lastName: string;
+  email: string;
+  year: number;
+  section: string;
+  courseName: string;
 }
 
 interface AttendanceRecord {
@@ -51,6 +55,7 @@ const AttendancePage = () => {
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+  const [viewMode, setViewMode] = useState<'logs' | 'roster'>('logs');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,7 +84,7 @@ const AttendancePage = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (selectedDate && slug) {
+    if (selectedDate && slug && viewMode === 'logs') {
       const fetchAttendance = async () => {
         setIsLoadingAttendance(true);
         try {
@@ -98,7 +103,7 @@ const AttendancePage = () => {
       };
       fetchAttendance();
     }
-  }, [slug, selectedDate]);
+  }, [slug, selectedDate, viewMode]);
 
   if (!classDetails) {
     return (
@@ -108,8 +113,13 @@ const AttendancePage = () => {
     );
   }
 
-  const filteredStudents = attendanceRecords.filter((record) =>
+  const filteredLogs = attendanceRecords.filter((record) =>
     `${record.student.firstName} ${record.student.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredRoster = (classDetails.students || []).filter((student) =>
+    `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    student.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const totalStudentsInClass = classDetails?.students?.length || 0;
@@ -176,7 +186,7 @@ const AttendancePage = () => {
           </button>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">{classDetails.name}</h1>
           <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider flex items-center">
-            Attendance Archive & Export
+            {viewMode === 'logs' ? 'Attendance Archive & Export' : 'Class Roster & Directory'}
           </p>
         </div>
         
@@ -201,6 +211,26 @@ const AttendancePage = () => {
             <FaFileExcel size={12} /> {isExporting ? 'Processing...' : 'Export Excel'}
           </button>
         </div>
+      </div>
+
+      {/* View Switcher */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setViewMode('logs')}
+          className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+            viewMode === 'logs' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Attendance Logs
+        </button>
+        <button
+          onClick={() => setViewMode('roster')}
+          className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+            viewMode === 'roster' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Master Roster
+        </button>
       </div>
 
       {/* Class Context Card */}
@@ -229,63 +259,135 @@ const AttendancePage = () => {
         </div>
       </div>
 
-      {/* Analytics Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Enrolled', value: totalStudentsInClass, color: 'text-black' },
-          { label: 'Present Today', value: presentCount, color: 'text-green-600' },
-          { label: 'Absent', value: absentCount, color: 'text-red-600' },
-          { label: 'Late', value: lateCount, color: 'text-amber-600' }
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-            <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+      {viewMode === 'logs' ? (
+        <>
+          {/* Analytics Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Enrolled', value: totalStudentsInClass },
+              { label: 'Present Today', value: presentCount },
+              { label: 'Absent', value: absentCount },
+              { label: 'Late', value: lateCount }
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                <p className="text-2xl font-black text-black">{stat.value}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Date Selector Sidebar */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="flex items-center px-1 mb-2">
-            <FaCalendarAlt className="mr-2 text-black opacity-30" size={12} />
-            <h2 className="text-xs font-bold text-black uppercase tracking-widest">Session Dates</h2>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="max-h-96 overflow-y-auto divide-y divide-gray-50 custom-scrollbar">
-              {availableDates.length > 0 ? (
-                availableDates.map((date) => (
-                  <button
-                    key={date}
-                    onClick={() => setSelectedDate(date)}
-                    className={`w-full text-left px-6 py-4 transition-all flex items-center justify-between group ${
-                      selectedDate === date ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-600'
-                    }`}
-                  >
-                    <span className="text-xs font-bold uppercase tracking-tight">{date}</span>
-                    <FaChevronRight size={10} className={selectedDate === date ? 'text-white' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
-                  </button>
-                ))
-              ) : (
-                <div className="p-10 text-center">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No logs found</p>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Date Selector Sidebar */}
+            <div className="lg:col-span-1 space-y-4">
+              <div className="flex items-center px-1 mb-2">
+                <FaCalendarAlt className="mr-2 text-black opacity-30" size={12} />
+                <h2 className="text-xs font-bold text-black uppercase tracking-widest">Session Dates</h2>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="max-h-96 overflow-y-auto divide-y divide-gray-50 custom-scrollbar">
+                  {availableDates.length > 0 ? (
+                    availableDates.map((date) => (
+                      <button
+                        key={date}
+                        onClick={() => setSelectedDate(date)}
+                        className={`w-full text-left px-6 py-4 transition-all flex items-center justify-between group ${
+                          selectedDate === date ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-600'
+                        }`}
+                      >
+                        <span className="text-xs font-bold uppercase tracking-tight">{date}</span>
+                        <FaChevronRight size={10} className={selectedDate === date ? 'text-white' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-10 text-center">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No logs found</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Attendance Records Table */}
+            <div className="lg:col-span-3 space-y-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1">
+                <h2 className="text-xs font-bold text-black uppercase tracking-widest flex items-center">
+                  Logs for <span className="ml-2 text-gray-400">{selectedDate || 'Select a date'}</span>
+                </h2>
+                <div className="relative w-full md:w-72">
+                  <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-black opacity-20" size={12} />
+                  <input
+                    type="text"
+                    placeholder="Search student..."
+                    className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium focus:ring-2 focus:ring-black outline-none transition-all"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/50">
+                        <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Student Identity</th>
+                        <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Status</th>
+                        <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Arrival Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {isLoadingAttendance ? (
+                        <tr>
+                          <td colSpan={3} className="py-20 text-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black mx-auto"></div>
+                          </td>
+                        </tr>
+                      ) : filteredLogs.length > 0 ? (
+                        filteredLogs.map((record) => (
+                          <tr key={record.id} className="hover:bg-gray-50/50 transition-colors group">
+                            <td className="px-8 py-4">
+                              <div className="flex items-center">
+                                <div className="h-8 w-8 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform">
+                                  {record.student.firstName[0]}{record.student.lastName[0]}
+                                </div>
+                                <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{`${record.student.firstName} ${record.student.lastName}`}</span>
+                              </div>
+                            </td>
+                            <td className="px-8 py-4 text-center">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter bg-gray-100 text-black border border-gray-200">
+                                {record.status}
+                              </span>
+                            </td>
+                            <td className="px-8 py-4 text-right text-xs font-mono font-bold text-gray-500 uppercase tracking-tight">
+                              {record.time || 'N/A'}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="py-20 text-center">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No active logs for this session</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Attendance Records Table */}
-        <div className="lg:col-span-3 space-y-4">
+        </>
+      ) : (
+        <div className="space-y-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1">
             <h2 className="text-xs font-bold text-black uppercase tracking-widest flex items-center">
-              Logs for <span className="ml-2 text-gray-400">{selectedDate || 'Select a date'}</span>
+              Officially Enrolled <span className="ml-2 text-gray-400">({totalStudentsInClass} Students)</span>
             </h2>
             <div className="relative w-full md:w-72">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-black opacity-20" size={12} />
               <input
                 type="text"
-                placeholder="Search student..."
+                placeholder="Search roster..."
                 className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium focus:ring-2 focus:ring-black outline-none transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -298,47 +400,41 @@ const AttendancePage = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/50">
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Student Identity</th>
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Status</th>
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Arrival Time</th>
+                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Student Full Name</th>
+                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Email Address</th>
+                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Year Level</th>
+                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Academic Program</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {isLoadingAttendance ? (
-                    <tr>
-                      <td colSpan={3} className="py-20 text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black mx-auto"></div>
-                      </td>
-                    </tr>
-                  ) : filteredStudents.length > 0 ? (
-                    filteredStudents.map((record) => (
-                      <tr key={record.id} className="hover:bg-gray-50/50 transition-colors group">
+                  {filteredRoster.length > 0 ? (
+                    filteredRoster.map((student) => (
+                      <tr key={student.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-8 py-4">
                           <div className="flex items-center">
                             <div className="h-8 w-8 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform">
-                              {record.student.firstName[0]}{record.student.lastName[0]}
+                              {student.firstName[0]}{student.lastName[0]}
                             </div>
-                            <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{`${record.student.firstName} ${record.student.lastName}`}</span>
+                            <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{`${student.firstName} ${student.lastName}`}</span>
                           </div>
                         </td>
-                        <td className="px-8 py-4 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter ${
-                            record.status === 'Present' ? 'bg-green-50 text-green-700' :
-                            record.status === 'Late' ? 'bg-amber-50 text-amber-700' :
-                            'bg-red-50 text-red-700'
-                          }`}>
-                            {record.status}
-                          </span>
+                        <td className="px-8 py-4 text-xs font-medium text-gray-500 lowercase">
+                          {student.email || 'No email provided'}
                         </td>
-                        <td className="px-8 py-4 text-right text-xs font-mono font-bold text-gray-500 uppercase tracking-tight">
-                          {record.time || 'N/A'}
+                        <td className="px-8 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight">
+                          Year {student.year} - {student.section}
+                        </td>
+                        <td className="px-8 py-4 text-right">
+                          <span className="text-[10px] font-black text-black bg-gray-100 px-2.5 py-1 rounded-md uppercase tracking-tighter">
+                            {student.courseName}
+                          </span>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={3} className="py-20 text-center">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No active logs for this session</p>
+                      <td colSpan={4} className="py-20 text-center">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No students found matching your search</p>
                       </td>
                     </tr>
                   )}
@@ -347,7 +443,7 @@ const AttendancePage = () => {
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
