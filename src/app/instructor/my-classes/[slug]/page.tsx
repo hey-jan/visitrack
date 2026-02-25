@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaArrowLeft, FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight, FaCamera } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
 interface ClassDetails {
@@ -181,6 +181,12 @@ const AttendancePage = () => {
         </div>
         
         <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/instructor/my-classes/${slug}/take-attendance`}
+            className="bg-black text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-gray-800 transition-all font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-gray-200"
+          >
+            <FaCamera size={12} /> Take Attendance
+          </Link>
           <button
             onClick={() => console.log('Export PDF')}
             className="bg-white border border-gray-200 text-black px-5 py-2.5 rounded-xl flex items-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
@@ -246,7 +252,7 @@ const AttendancePage = () => {
             <h2 className="text-xs font-bold text-black uppercase tracking-widest">Session Dates</h2>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-50 custom-scrollbar">
+            <div className="max-h-96 overflow-y-auto divide-y divide-gray-50 custom-scrollbar">
               {availableDates.length > 0 ? (
                 availableDates.map((date) => (
                   <button

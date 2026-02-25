@@ -12,6 +12,7 @@ export async function GET(
       where: { id: id },
       include: {
         course: true,
+        facialData: true,
       },
     });
     if (!student) {

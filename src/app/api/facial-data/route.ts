@@ -5,20 +5,21 @@ import prisma from '@/lib/prisma';
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { userId, facialData } = data;
+    const { studentId, embedding, thumbnailUrl } = data;
 
     // Basic validation
-    if (!userId || !facialData) {
+    if (!studentId || !embedding) {
       return NextResponse.json(
-        { error: 'User ID and facial data are required.' },
+        { error: 'Student ID and embedding are required.' },
         { status: 400 }
       );
     }
 
     const newFacialData = await prisma.facialData.create({
       data: {
-        userId,
-        data: facialData,
+        studentId,
+        embedding: typeof embedding === 'string' ? embedding : JSON.stringify(embedding),
+        thumbnailUrl: thumbnailUrl || null,
       },
     });
 

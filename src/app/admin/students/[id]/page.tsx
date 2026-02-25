@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaEnvelope, FaBookOpen, FaArrowLeft, FaGraduationCap, FaSchool, FaUserGraduate } from 'react-icons/fa';
+import { FaEnvelope, FaBookOpen, FaArrowLeft, FaGraduationCap, FaSchool, FaUserGraduate, FaCamera } from 'react-icons/fa';
 
 const StudentProfilePage = () => {
   const { id } = useParams();
@@ -13,10 +13,9 @@ const StudentProfilePage = () => {
   useEffect(() => {
     const fetchStudent = async () => {
       try {
-        const res = await fetch('/api/students');
-        const data = await res.json();
-        const foundStudent = data.find((s: any) => s.id === id);
-        if (foundStudent) {
+        const res = await fetch(`/api/students/${id}`);
+        if (res.ok) {
+          const foundStudent = await res.json();
           setStudent({
             ...foundStudent,
             name: `${foundStudent.firstName} ${foundStudent.lastName}`,
@@ -82,8 +81,12 @@ const StudentProfilePage = () => {
         {/* Left Column: Profile Overview */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-            <div className="h-24 w-24 rounded-2xl bg-black text-white flex items-center justify-center text-3xl font-bold mx-auto mb-6 shadow-lg shadow-black/10">
-              {getInitials(student.name)}
+            <div className="h-24 w-24 rounded-2xl bg-black text-white flex items-center justify-center text-3xl font-bold mx-auto mb-6 shadow-lg shadow-black/10 overflow-hidden">
+              {student.imageUrl ? (
+                <img src={student.imageUrl} alt={student.name} className="w-full h-full object-cover" />
+              ) : (
+                getInitials(student.name)
+              )}
             </div>
             <h2 className="text-xl font-bold text-gray-900">{student.name}</h2>
             <div className="flex items-center justify-center text-gray-500 text-sm mt-2">
@@ -102,6 +105,37 @@ const StudentProfilePage = () => {
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Registered</span>
                 <span className="text-xs font-semibold text-gray-700">{registrationDate}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Facial Data Section */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <div className="flex items-center">
+                <FaCamera className="mr-3 text-black" size={16} />
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Facial Enrollment</h3>
+              </div>
+            </div>
+            <div className="p-6">
+              {student.facialData && student.facialData.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {student.facialData.map((data: any, index: number) => (
+                    <div key={data.id || index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      {data.thumbnailUrl ? (
+                        <img src={data.thumbnailUrl} alt={`Face ${index + 1}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <FaCamera size={14} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-400 text-xs italic">
+                  No facial data enrolled yet.
+                </div>
+              )}
             </div>
           </div>
         </div>

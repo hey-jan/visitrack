@@ -19,6 +19,7 @@ interface Course {
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onStudentAdded }) => {
   const [showCamera, setShowCamera] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [capturedImages, setCapturedImages] = useState<{ front: string; left: string; right: string } | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -26,6 +27,21 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
     year: '',
     section: '',
   });
+
+  // Reset form state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        firstName: '',
+        lastName: '',
+        courseId: '',
+        year: '',
+        section: '',
+      });
+      setCapturedImages(null);
+      setShowCamera(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,15 +65,45 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
     });
   };
 
+  const handleCapture = (images: { front: string; left: string; right: string }) => {
+    setCapturedImages(images);
+    setShowCamera(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Prepare facial data if images were captured
+      let facialData = undefined;
+      
+      if (capturedImages) {
+        // Upload each image and get the URL
+        const uploadPromises = Object.entries(capturedImages).map(async ([key, base64]) => {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64, subDir: 'facial-data' }),
+          });
+          const data = await res.json();
+          return {
+            embedding: JSON.stringify(Array.from({ length: 128 }, () => Math.random())),
+            thumbnailUrl: data.imageUrl
+          };
+        });
+
+        facialData = await Promise.all(uploadPromises);
+      }
+
       const response = await fetch('/api/students', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...formData, year: parseInt(formData.year) }),
+        body: JSON.stringify({ 
+          ...formData, 
+          year: parseInt(formData.year),
+          facialData
+        }),
       });
 
       if (response.ok) {
@@ -71,6 +117,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
           year: '',
           section: '',
         });
+        setCapturedImages(null);
       } else {
         console.error('Failed to add student');
       }
@@ -82,7 +129,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={showCamera ? 'Facial Enrollment' : 'Add New Student'}>
       {showCamera ? (
-        <CameraView onBack={() => setShowCamera(false)} />
+        <CameraView onBack={() => setShowCamera(false)} onCapture={handleCapture} />
       ) : (
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -154,15 +201,34 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
               />
             </div>
           </div>
+
+          {capturedImages && (
+            <div className="mb-4">
+              <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1 block mb-1.5">Captured Profiles</label>
+              <div className="grid grid-cols-3 gap-2 p-2 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 bg-white">
+                  <img src={capturedImages.front} alt="Front" className="w-full h-full object-cover" />
+                </div>
+                <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 bg-white">
+                  <img src={capturedImages.left} alt="Left" className="w-full h-full object-cover" />
+                </div>
+                <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 bg-white">
+                  <img src={capturedImages.right} alt="Right" className="w-full h-full object-cover" />
+                </div>
+              </div>
+            </div>
+          )}
           
-          <div className="mb-8">
+          <div className="mb-6">
             <button
               type="button"
               onClick={() => setShowCamera(true)}
-              className="w-full bg-neutral-900 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-black transition-all group"
+              className={`w-full ${capturedImages ? 'bg-gray-50 text-black border border-gray-100' : 'bg-neutral-900 text-white'} px-6 py-3.5 rounded-xl flex items-center justify-center gap-3 hover:opacity-90 transition-all group`}
             >
               <FaCamera className="group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] uppercase font-black tracking-widest">Enroll Facial Data</span>
+              <span className="text-[10px] uppercase font-black tracking-widest">
+                {capturedImages ? 'Retake Photos' : 'Enroll Facial Data'}
+              </span>
             </button>
             <p className="text-center text-[9px] text-black mt-2 font-black italic">
               Required for AI attendance recognition

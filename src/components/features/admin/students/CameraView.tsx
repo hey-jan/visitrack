@@ -6,10 +6,10 @@ import Webcam from 'react-webcam';
 type CaptureStep = 'front' | 'left' | 'right' | 'confirm';
 
 const capturePrompts: Record<CaptureStep, string> = {
-  front: 'Please look directly at the camera',
-  left: 'Please turn your head to the left',
-  right: 'Please turn your head to the right',
-  confirm: 'Confirm Photos',
+  front: 'Front View',
+  left: 'Left Profile',
+  right: 'Right Profile',
+  confirm: 'Verify Captured Profiles',
 };
 
 interface CameraViewProps {
@@ -34,7 +34,11 @@ const CameraView: React.FC<CameraViewProps> = ({ onBack, onCapture }) => {
 
   const handleConfirm = () => {
     if (capturedImages.front && capturedImages.left && capturedImages.right) {
-      onCapture(capturedImages as { front: string; left: string; right: string });
+      onCapture({
+        front: capturedImages.front,
+        left: capturedImages.left,
+        right: capturedImages.right
+      });
       onBack();
     }
   };
@@ -46,11 +50,17 @@ const CameraView: React.FC<CameraViewProps> = ({ onBack, onCapture }) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">
-        {currentStep === 'confirm' ? 'Confirm Photos' : 'Capture Student Photo'}
-      </h2>
+      {currentStep === 'confirm' && (
+        <h2 className="text-[10px] font-black text-black tracking-[0.2em] uppercase mb-6 text-center">
+          Verify Captured Profiles
+        </h2>
+      )}
       
-      <p className="text-center text-gray-600 mb-4">{capturePrompts[currentStep]}</p>
+      {currentStep !== 'confirm' && (
+        <p className="text-center text-[10px] font-black text-black tracking-[0.3em] uppercase mb-4">
+          {capturePrompts[currentStep]}
+        </p>
+      )}
 
       {currentStep !== 'confirm' ? (
         <Webcam
