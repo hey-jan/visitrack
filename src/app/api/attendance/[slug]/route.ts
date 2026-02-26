@@ -76,16 +76,23 @@ export async function POST(
     // Assume all records in this batch are for the same date
     const date = records[0].date;
 
-    // Find or create a session for this class and date
-    const session = await prisma.session.upsert({
+    // Check if session already exists
+    const existingSession = await prisma.session.findUnique({
       where: {
         classId_date: {
           classId: resolvedId,
           date,
         },
       },
-      update: {},
-      create: {
+    });
+
+    if (existingSession) {
+      return NextResponse.json({ error: 'Attendance for this session has already been recorded.' }, { status: 400 });
+    }
+
+    // Create a new session
+    const session = await prisma.session.create({
+      data: {
         classId: resolvedId,
         date,
       },

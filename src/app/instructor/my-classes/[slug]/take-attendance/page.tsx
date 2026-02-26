@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaArrowLeft, FaCamera, FaUserCheck, FaStop, FaPlay } from 'react-icons/fa';
+import { FaArrowLeft, FaCamera, FaUserCheck, FaStop, FaPlay, FaCheckCircle } from 'react-icons/fa';
 import Webcam from 'react-webcam';
 
 interface Student {
@@ -25,6 +25,7 @@ const TakeAttendancePage = () => {
 
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isAlreadyCompleted, setIsAlreadyCompleted] = useState(false);
   const [detectedStudents, setDetectedStudents] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [recognitionResults, setRecognitionResults] = useState<any[]>([]);
@@ -33,20 +34,36 @@ const TakeAttendancePage = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const fetchClass = async () => {
+    const fetchClassAndStatus = async () => {
       try {
-        const res = await fetch(`/api/classes/${slug}`);
-        if (res.ok) {
-          const data = await res.json();
+        const today = new Date().toISOString().split('T')[0];
+        const [classRes, attendanceRes] = await Promise.all([
+          fetch(`/api/classes/${slug}`),
+          fetch(`/api/attendance/${slug}?date=${today}`)
+        ]);
+
+        if (classRes.ok) {
+          const data = await classRes.json();
           setClassDetails(data);
         }
+
+        if (attendanceRes.ok) {
+          const existingAttendance = await attendanceRes.json();
+          if (existingAttendance && existingAttendance.length > 0) {
+            setIsAlreadyCompleted(true);
+            const presentIds = existingAttendance
+              .filter((rec: any) => rec.status === 'Present')
+              .map((rec: any) => rec.student.id);
+            setDetectedStudents(new Set(presentIds));
+          }
+        }
       } catch (error) {
-        console.error('Failed to fetch class details:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchClass();
+    fetchClassAndStatus();
   }, [slug]);
 
   // Recognition Interval
@@ -60,14 +77,12 @@ const TakeAttendancePage = () => {
       if (!imageSrc) return;
 
       try {
-        // Convert base64 to blob
         const res = await fetch(imageSrc);
         const blob = await res.blob();
         
         const formData = new FormData();
         formData.append('file', blob, 'capture.jpg');
         
-        // Only allow students in THIS class
         const allowedIds = classDetails.students.map(s => s.firstName.toLowerCase()).join(',');
         formData.append('allowed_ids', allowedIds);
 
@@ -80,10 +95,8 @@ const TakeAttendancePage = () => {
           const data = await recognizeRes.json();
           setRecognitionResults(data.results);
           
-          // Update detected students
           data.results.forEach((result: any) => {
             if (result.name !== "Unknown") {
-              // Match result.name with student firstName/lastName
               const student = classDetails.students.find(
                 s => `${s.firstName.toLowerCase()}` === result.name.toLowerCase() || 
                      `${s.firstName.toLowerCase()}_${s.lastName.toLowerCase()}` === result.name.toLowerCase() ||
@@ -102,7 +115,7 @@ const TakeAttendancePage = () => {
     };
 
     if (isSessionActive) {
-      interval = setInterval(captureRecognition, 2000); // Run every 2 seconds
+      interval = setInterval(captureRecognition, 2000);
     }
 
     return () => {
@@ -118,8 +131,7 @@ const TakeAttendancePage = () => {
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.width);
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
     if (recognitionResults.length > 0) {
       recognitionResults.forEach(result => {
@@ -127,18 +139,15 @@ const TakeAttendancePage = () => {
         const width = x2 - x1;
         const height = y2 - y1;
 
-        // Draw box
         ctx.strokeStyle = result.name === "Unknown" ? '#ef4444' : '#22c55e';
         ctx.lineWidth = 3;
         ctx.strokeRect(x1, y1, width, height);
 
-        // Draw label background
         ctx.fillStyle = result.name === "Unknown" ? '#ef4444' : '#22c55e';
         const label = `${result.name} (${Math.round(result.confidence * 100)}%)`;
         const textWidth = ctx.measureText(label).width;
         ctx.fillRect(x1, y1 - 25, textWidth + 10, 25);
 
-        // Draw text
         ctx.fillStyle = 'white';
         ctx.font = 'bold 12px Inter, sans-serif';
         ctx.fillText(label, x1 + 5, y1 - 8);
@@ -147,10 +156,11 @@ const TakeAttendancePage = () => {
   }, [recognitionResults]);
 
   const toggleSession = async () => {
+    if (isAlreadyCompleted) return;
+
     if (!isSessionActive) {
-      // Sync the backend with the database before starting
       try {
-        await fetch('http://localhost:8000/sync', { method: 'POST' });
+        await fetch('http://localhost:8001/sync', { method: 'POST' });
       } catch (error) {
         console.error('Failed to sync recognition backend:', error);
       }
@@ -161,8 +171,8 @@ const TakeAttendancePage = () => {
   const handleFinishSession = async () => {
     if (!classDetails) return;
 
-    setIsSessionActive(false); // Stop the interval first
-    setRecognitionResults([]); // Clear visuals immediately
+    setIsSessionActive(false);
+    setRecognitionResults([]);
 
     const today = new Date().toISOString().split('T')[0];
     const attendanceRecords = classDetails.students.map(student => ({
@@ -180,6 +190,7 @@ const TakeAttendancePage = () => {
       });
 
       if (res.ok) {
+        setIsAlreadyCompleted(true);
         router.push(`/instructor/my-classes/${slug}`);
       }
     } catch (error) {
@@ -205,7 +216,11 @@ const TakeAttendancePage = () => {
         </div>
 
         <div className="flex gap-4">
-          {!isSessionActive ? (
+          {isAlreadyCompleted ? (
+            <div className="bg-green-50 text-green-700 px-8 py-3 rounded-xl flex items-center gap-3 font-bold text-xs uppercase tracking-widest border border-green-100 shadow-sm">
+              <FaCheckCircle size={14} /> Session Completed
+            </div>
+          ) : !isSessionActive ? (
             <button
               onClick={toggleSession}
               className="bg-black text-white px-8 py-3 rounded-xl flex items-center gap-3 font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg"
@@ -226,7 +241,15 @@ const TakeAttendancePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="relative aspect-video bg-gray-100 rounded-3xl border-4 border-white shadow-2xl overflow-hidden group">
-            {isSessionActive ? (
+            {isAlreadyCompleted ? (
+              <div className="flex flex-col items-center justify-center h-full bg-green-50/30">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                  <FaCheckCircle size={40} className="text-green-600" />
+                </div>
+                <p className="text-sm font-black text-green-800 uppercase tracking-[0.2em]">Attendance Recorded</p>
+                <p className="text-[10px] text-green-600 mt-2 font-bold uppercase">Class: {classDetails.name} • {new Date().toLocaleDateString()}</p>
+              </div>
+            ) : isSessionActive ? (
               <>
                 <Webcam
                   audio={false}
