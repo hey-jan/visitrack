@@ -1,6 +1,7 @@
 // src/app/api/courses/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import slugify from 'slugify';
 
 export async function GET() {
   try {
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
       data: {
         courseNo,
         courseName,
+        slug: slugify(courseNo, { lower: true }),
       },
     });
 

@@ -11,10 +11,10 @@ import { attendanceData } from './seed-data/attendanceData.ts';
 const prisma = new PrismaClient();
 
 interface StudentData {
+  studentNumber: string;
   firstName: string;
   lastName: string;
   email: string;
-  imageUrl: string;
   course: string;
   year: number;
   section: string;
@@ -42,6 +42,7 @@ async function main() {
       data: {
         courseNo: course.courseNo,
         courseName: course.courseName || course.courseNo,
+        slug: slugify(course.courseNo, { lower: true }),
       },
     });
     courseMap.set(course.courseNo, createdCourse);
@@ -71,7 +72,8 @@ async function main() {
     const createdClass = await prisma.class.create({
       data: {
         name: aClass.name,
-        slug: slugify(aClass.name, { lower: true }),
+        // Include schedule number in slug for uniqueness
+        slug: slugify(`${aClass.name}-${aClass.schedule}`, { lower: true }),
         instructorId: instructor.id,
         room: aClass.room,
         schedule: aClass.schedule,
@@ -80,7 +82,8 @@ async function main() {
         units: aClass.units,
       },
     });
-    classMap.set(aClass.name, createdClass);
+    // Use unique identifier for mapping (name + schedule)
+    classMap.set(`${aClass.name}-${aClass.schedule}`, createdClass);
   }
 
   // Seed Students
@@ -94,19 +97,22 @@ async function main() {
 
     const createdStudent = await prisma.student.create({
       data: {
+        studentNumber: student.studentNumber,
         firstName: student.firstName,
         lastName: student.lastName,
+        slug: student.studentNumber.toLowerCase().replace(/\s+/g, '-'),
         email: student.email,
-        imageUrl: student.imageUrl,
         courseId: course.id,
         year: student.year,
         section: student.section,
         enrollments: {
           create: student.classes
-            .filter(className => classMap.has(className))
-            .map((className) => ({
-              classId: classMap.get(className)!.id,
-            })),
+            .map(className => {
+              // Find the first class in the map that matches the name (since student data only has names)
+              const matchedKey = Array.from(classMap.keys()).find(key => key.startsWith(`${className}-`));
+              return matchedKey ? { classId: classMap.get(matchedKey)!.id } : null;
+            })
+            .filter((item): item is { classId: string } => item !== null),
         },
       },
     });
@@ -118,14 +124,15 @@ async function main() {
         data: {
           studentId: createdStudent.id,
           embedding: JSON.stringify(Array.from({ length: 128 }, () => Math.random())),
-          thumbnailUrl: student.imageUrl,
         },
       });
     }
   }
 
   // Seed Attendance Data for CS-PRACT41
-  const csPract41Class = classMap.get('CS-PRACT41');
+  const csPract41Key = Array.from(classMap.keys()).find(key => key.startsWith('CS-PRACT41-'));
+  const csPract41Class = csPract41Key ? classMap.get(csPract41Key) : null;
+  
   if (csPract41Class) {
     for (const [date, records] of Object.entries(attendanceData)) {
       // Create session first

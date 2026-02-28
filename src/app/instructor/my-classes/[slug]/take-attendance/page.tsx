@@ -139,7 +139,7 @@ const TakeAttendancePage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[500px]">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-125">
           <div className="p-6 border-b border-gray-50 bg-gray-50/50">
             <h2 className="text-xs font-black text-black uppercase tracking-widest flex items-center">
               <FaUserCheck className="mr-3" /> Detected Students

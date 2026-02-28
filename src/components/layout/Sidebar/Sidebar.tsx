@@ -23,9 +23,9 @@ interface UserProfile {
 
 const adminLinks: NavLink[] = [
   { href: '/admin', label: 'Dashboard', icon: FaHome },
-  { href: '/admin/students', label: 'Manage Students', icon: FaUserGraduate },
-  { href: '/admin/instructors', label: 'Manage Instructors', icon: FaUserTie },
-  { href: '/admin/classes', label: 'Manage Classes', icon: FaBook },
+  { href: '/admin/students', label: 'Student Directory', icon: FaUserGraduate },
+  { href: '/admin/instructors', label: 'Instructor Registry', icon: FaUserTie },
+  { href: '/admin/classes', label: 'Academic Classes', icon: FaBook },
   { href: '/admin/settings', label: 'Settings', icon: FaCog },
 ];
 
@@ -72,8 +72,13 @@ const Sidebar = ({ type }: SidebarProps) => {
   return (
     <aside className="w-72 bg-black text-white flex flex-col shrink-0">
       <div className="p-8">
-        <h1 className="text-2xl font-black tracking-tighter uppercase italic">Visitrack</h1>
-        <p className="text-[10px] font-bold text-gray-500 tracking-[0.3em] uppercase mt-1">{portalName} Portal</p>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black font-black text-xs shadow-lg shadow-white/5 italic">
+            VS
+          </div>
+          <h1 className="text-2xl font-black tracking-tighter uppercase italic">VisiTrack</h1>
+        </div>
+        <p className="text-[10px] font-bold text-gray-500 tracking-[0.3em] uppercase">{portalName} Portal</p>
       </div>
 
       <nav className="flex-1 px-4">
@@ -86,11 +91,11 @@ const Sidebar = ({ type }: SidebarProps) => {
                   <div
                     className={`flex items-center p-4 rounded-xl transition-all ${
                       isActive 
-                        ? 'bg-white text-black font-black shadow-lg shadow-white/5' 
+                        ? 'bg-neutral-800 text-neutral-100 font-black' 
                         : 'text-gray-400 hover:bg-neutral-900 hover:text-white font-bold'
                     }`}
                   >
-                    <link.icon className={`mr-3 ${isActive ? 'text-black' : 'text-gray-500'}`} />
+                    <link.icon className={`mr-3 ${isActive ? 'text-neutral-100' : 'text-gray-500'}`} />
                     <span className="uppercase tracking-widest text-[10px]">{link.label}</span>
                   </div>
                 </Link>
