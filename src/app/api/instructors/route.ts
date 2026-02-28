@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcrypt';
+import slugify from 'slugify';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -11,6 +14,7 @@ export async function GET() {
         firstName: true,
         lastName: true,
         email: true,
+        slug: true,
         createdAt: true,
         updatedAt: true,
       }
@@ -50,6 +54,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const slug = slugify(`${firstName} ${lastName}`, { lower: true });
 
     const newInstructor = await prisma.instructor.create({
       data: {
@@ -57,6 +62,7 @@ export async function POST(request: Request) {
         lastName,
         email,
         password: hashedPassword,
+        slug,
       },
     });
 

@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FaSearch, FaPlus, FaEdit, FaTrash, FaShieldAlt } from 'react-icons/fa';
 import ConfirmationModal from '@/components/features/shared/ConfirmationModal';
 import AddInstructorModal from '@/components/features/admin/instructors/AddInstructorModal';
 import EditInstructorModal from '@/components/features/admin/instructors/EditInstructorModal';
 
 const ManageInstructorsPage = () => {
+  const router = useRouter();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -20,7 +22,7 @@ const ManageInstructorsPage = () => {
   const fetchInstructors = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/instructors');
+      const res = await fetch('/api/instructors', { cache: 'no-store' });
       const data = await res.json();
       setInstructors(data);
     } catch (error) {
@@ -152,7 +154,11 @@ const ManageInstructorsPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredInstructors.map((inst, index) => (
-                  <tr key={index} className="hover:bg-gray-50/80 transition-colors group">
+                  <tr 
+                    key={index} 
+                    onClick={() => router.push(`/admin/instructors/${inst.slug || inst.id}`)}
+                    className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
+                  >
                     <td className="px-8 py-5">
                       <div className="flex items-center">
                         <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform">
@@ -170,14 +176,14 @@ const ManageInstructorsPage = () => {
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleEditClick(inst)}
+                          onClick={(e) => { e.stopPropagation(); handleEditClick(inst); }}
                           className="p-2 text-black hover:bg-gray-200 rounded-lg transition-colors"
                           title="Edit Profile"
                         >
                           <FaEdit size={14} />
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(inst)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(inst); }}
                           className="p-2 text-black hover:bg-gray-200 rounded-lg transition-colors"
                           title="Delete Account"
                         >

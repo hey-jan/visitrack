@@ -17,4 +17,18 @@ export const attendanceData: { [key: string]: { firstName: string, lastName: str
     { firstName: 'Sophia', lastName: 'Turner', status: 'Present', time: '08:04 AM' },
     { firstName: 'Oliver', lastName: 'Wilson', status: 'Present', time: '08:05 AM' },
   ],
+  'Jan 08, 2026': [
+    { firstName: 'John', lastName: 'Dela Cruz', status: 'Present', time: '08:00 AM' },
+    { firstName: 'Maria', lastName: 'Garcia', status: 'Present', time: '08:01 AM' },
+    { firstName: 'Pedro', lastName: 'Reyes', status: 'Absent', time: '-' },
+    { firstName: 'Ana', lastName: 'Santos', status: 'Present', time: '08:02 AM' },
+    { firstName: 'James', lastName: 'Wilson', status: 'Present', time: '08:03 AM' },
+  ],
+  'Jan 07, 2026': [
+    { firstName: 'John', lastName: 'Dela Cruz', status: 'Absent', time: '-' },
+    { firstName: 'Maria', lastName: 'Garcia', status: 'Present', time: '08:01 AM' },
+    { firstName: 'Pedro', lastName: 'Reyes', status: 'Present', time: '08:02 AM' },
+    { firstName: 'Ana', lastName: 'Santos', status: 'Present', time: '08:03 AM' },
+    { firstName: 'James', lastName: 'Wilson', status: 'Present', time: '08:04 AM' },
+  ]
 };

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,37 +7,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model SystemSettings {
+  id                String   @id @default("global")
+  lateThreshold     Int      @default(15)
+  absentThreshold   Int      @default(30)
+  autoMarkAbsent    Boolean  @default(true)
+  confidenceScore   Float    @default(0.80)
+  updatedAt         DateTime @updatedAt
+}
+
 model Student {
-  id         String   @id @default(cuid())
-  firstName  String
-  lastName   String
-  email      String?  @unique
-  imageUrl   String?  // Main profile picture URL
-  courseId   String
-  course     Course   @relation(fields: [courseId], references: [id])
-  year       Int
-  section    String
-  facialData FacialData[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  Attendance Attendance[]
-  enrollments Enrollment[]
+  id            String       @id @default(cuid())
+  studentNumber String?      @unique
+  firstName     String
+  lastName      String
+  courseId      String
+  year          Int
+  section       String
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  email         String?      @unique
+  imageUrl      String?
+  slug          String?      @unique
+  Attendance    Attendance[]
+  enrollments   Enrollment[]
+  facialData    FacialData[]
+  course        Course       @relation(fields: [courseId], references: [id])
 }
 
 model FacialData {
   id           String   @id @default(cuid())
   studentId    String
-  student      Student  @relation(fields: [studentId], references: [id])
-  embedding    String   // Store serialized array (JSON string)
-  thumbnailUrl String?  // URL to the specific face crop used for this embedding
+  embedding    String
+  thumbnailUrl String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  student      Student  @relation(fields: [studentId], references: [id])
 }
 
 model Course {
   id         String    @id @default(cuid())
   courseNo   String
   courseName String
+  slug       String?   @unique
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   students   Student[]
@@ -52,9 +62,10 @@ model Instructor {
   lastName  String
   email     String   @unique
   password  String
-  class     Class[]
+  slug      String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  class     Class[]
 }
 
 model Admin {
@@ -68,54 +79,55 @@ model Admin {
 }
 
 model Class {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String
-  slug         String   @unique
+  slug         String       @unique
   instructorId String
-  instructor   Instructor @relation(fields: [instructorId], references: [id])
   room         String
   schedule     String
   days         String
   time         String
   units        Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  instructor   Instructor   @relation(fields: [instructorId], references: [id])
   enrollments  Enrollment[]
   sessions     Session[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 }
 
 model Enrollment {
-  student    Student  @relation(fields: [studentId], references: [id])
   studentId  String
-  class      Class    @relation(fields: [classId], references: [id])
   classId    String
+  status     String   @default("ENROLLED") // ENROLLED, DROPPED
   enrolledAt DateTime @default(now())
+  class      Class    @relation(fields: [classId], references: [id])
+  student    Student  @relation(fields: [studentId], references: [id])
 
   @@id([studentId, classId])
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  date      String
-  classId   String
-  class     Class    @relation(fields: [classId], references: [id])
+  id         String       @id @default(cuid())
+  date       String
+  classId    String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   Attendance Attendance[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  class      Class        @relation(fields: [classId], references: [id])
 
   @@unique([classId, date])
 }
 
 model Attendance {
   id          String   @id @default(cuid())
-  status      String   // Present, Absent, Late
-  time        String   // Detected check-in time
-  confidence  Float?   // Facial recognition confidence score (0.0 - 1.0)
-  snapshotUrl String?  // URL/Path to the captured face snapshot
-  student     Student  @relation(fields: [studentId], references: [id])
+  status      String
+  time        String
+  confidence  Float?
+  snapshotUrl String?
   studentId   String
   sessionId   String
-  session     Session  @relation(fields: [sessionId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  session     Session  @relation(fields: [sessionId], references: [id])
+  student     Student  @relation(fields: [studentId], references: [id])
 }
