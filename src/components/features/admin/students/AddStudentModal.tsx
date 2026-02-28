@@ -33,6 +33,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
     studentNumber: '',
     firstName: '',
     lastName: '',
+    email: '',
     courseId: '',
     year: '',
     section: '',
@@ -46,6 +47,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
         studentNumber: '',
         firstName: '',
         lastName: '',
+        email: '',
         courseId: '',
         year: '',
         section: '',
@@ -178,6 +180,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
               className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all font-bold"
               onChange={handleChange}
               value={formData.studentNumber}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1 mb-4">
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Email Identity</label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="student@university.edu"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
+              onChange={handleChange}
+              value={formData.email}
             />
           </div>
 

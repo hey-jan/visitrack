@@ -10,6 +10,12 @@ interface EditInstructorModalProps {
   onInstructorUpdated: () => void;
 }
 
+interface Class {
+  id: string;
+  name: string;
+  schedule: string;
+}
+
 const EditInstructorModal: React.FC<EditInstructorModalProps> = ({ isOpen, onClose, instructor, onInstructorUpdated }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -17,7 +23,10 @@ const EditInstructorModal: React.FC<EditInstructorModalProps> = ({ isOpen, onClo
     email: '',
     password: '',
   });
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -28,14 +37,47 @@ const EditInstructorModal: React.FC<EditInstructorModalProps> = ({ isOpen, onClo
         email: instructor.email || '',
         password: '', // Don't populate password
       });
+      // Initialize selected classes from the instructor data
+      if (instructor.class) {
+        setSelectedClassIds(instructor.class.map((c: any) => c.id));
+      }
     }
   }, [instructor]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchClasses();
+    }
+  }, [isOpen]);
+
+  const fetchClasses = async () => {
+    setIsLoadingClasses(true);
+    try {
+      const response = await fetch('/api/classes');
+      if (response.ok) {
+        const data = await response.json();
+        setClasses(data);
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleClassToggle = (classId: string) => {
+    setSelectedClassIds(prev =>
+      prev.includes(classId)
+        ? prev.filter(id => id !== classId)
+        : [...prev, classId]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +96,7 @@ const EditInstructorModal: React.FC<EditInstructorModalProps> = ({ isOpen, onClo
           lastName: formData.lastName,
           email: formData.email,
           ...(formData.password ? { password: formData.password } : {}),
+          classIds: selectedClassIds,
         }),
       });
 
@@ -128,6 +171,32 @@ const EditInstructorModal: React.FC<EditInstructorModalProps> = ({ isOpen, onClo
             onChange={handleChange}
             value={formData.password}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Assigned Classes</label>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-48 overflow-y-auto space-y-2">
+            {isLoadingClasses ? (
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center py-4">Loading classes...</p>
+            ) : classes.length === 0 ? (
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center py-4">No classes available</p>
+            ) : (
+              classes.map((cls) => (
+                <label key={cls.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer border border-transparent hover:border-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={selectedClassIds.includes(cls.id)}
+                    onChange={() => handleClassToggle(cls.id)}
+                    className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-gray-900">{cls.name}</span>
+                    <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{cls.schedule}</span>
+                  </div>
+                </label>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">

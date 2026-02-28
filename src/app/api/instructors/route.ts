@@ -9,14 +9,14 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const instructors = await prisma.instructor.findMany({
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        slug: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        class: {
+          select: {
+            id: true,
+            name: true,
+            schedule: true
+          }
+        }
       }
     });
     return NextResponse.json(instructors);
@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { firstName, lastName, email, password } = data;
+    const { firstName, lastName, email, password, classIds } = data;
 
     if (!firstName || !lastName || !email || !password) {
       return NextResponse.json(
@@ -63,7 +63,13 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         slug,
+        class: {
+          connect: Array.isArray(classIds) ? classIds.map((id: string) => ({ id })) : []
+        }
       },
+      include: {
+        class: true
+      }
     });
 
     const { password: _, ...instructorWithoutPassword } = newInstructor;

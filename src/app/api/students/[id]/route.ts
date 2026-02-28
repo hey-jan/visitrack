@@ -69,6 +69,22 @@ export async function PUT(
       }
     }
 
+    if (email) {
+      const existingEmail = await prisma.student.findFirst({
+        where: { 
+          email,
+          NOT: { id }
+        }
+      });
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: `Email ${email} is already in use by another student.` },
+          { status: 400 }
+        );
+      }
+    }
+
     if (slug) {
       const existingSlug = await prisma.student.findFirst({
         where: { 

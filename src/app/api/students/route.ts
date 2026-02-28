@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       let totalAttendedSessions = 0;
 
       student.enrollments.forEach(enrollment => {
-        const sessions = enrollment.class.sessions;
+        const sessions = enrollment.class.sessions || [];
         totalPossibleSessions += sessions.length;
         
         // Count how many of these sessions the student was present in
@@ -56,6 +56,8 @@ export async function GET(request: Request) {
         totalAttendedSessions += attendedInClass;
       });
 
+      // If there are no possible sessions, return null (N/A)
+      // If there are sessions but none attended, return 0 (0%)
       const attendancePercentage = totalPossibleSessions > 0 
         ? Math.round((totalAttendedSessions / totalPossibleSessions) * 100) 
         : null;
@@ -82,16 +84,17 @@ export async function POST(request: Request) {
     const { facialData, classIds, ...studentData } = data;
     
     // Basic validation
-    if (!studentData.firstName || !studentData.lastName || !studentData.courseId || !studentData.studentNumber) {
+    if (!studentData.firstName || !studentData.lastName || !studentData.courseId || !studentData.studentNumber || !studentData.email) {
       return NextResponse.json(
-        { error: 'First name, last name, course, and student number are required.' },
+        { error: 'First name, last name, course, student number, and email are required.' },
         { status: 400 }
       );
     }
 
-    const slug = slugify(`${studentData.firstName} ${studentData.lastName}`, { lower: true });
+    // Use Student Number as the slug (lowercase for URL safety)
+    const slug = studentData.studentNumber.toLowerCase().replace(/\s+/g, '-');
 
-    // Check for uniqueness
+    // Check for uniqueness of Student ID
     const existingStudentNumber = await prisma.student.findUnique({
       where: { studentNumber: studentData.studentNumber }
     });
@@ -103,13 +106,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingSlug = await prisma.student.findUnique({
-      where: { slug }
+    // Check for uniqueness of Email
+    const existingEmail = await prisma.student.findUnique({
+      where: { email: studentData.email }
     });
 
-    if (existingSlug) {
+    if (existingEmail) {
       return NextResponse.json(
-        { error: `A student named "${studentData.firstName} ${studentData.lastName}" is already registered. If this is a different student, please add a middle initial or suffix to differentiate.` },
+        { error: `Email ${studentData.email} is already in use.` },
         { status: 400 }
       );
     }

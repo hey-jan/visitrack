@@ -211,7 +211,7 @@ const CourseRosterPage = () => {
                   <td className="px-8 py-5 text-center text-sm font-medium text-gray-600">{student.year}</td>
                   <td className="px-8 py-5 text-center">
                     <span className="text-sm font-bold text-gray-900">
-                      {student.attendancePercentage !== null ? `${student.attendancePercentage}%` : '—'}
+                      {student.attendancePercentage !== null ? `${student.attendancePercentage}%` : 'N/A'}
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">

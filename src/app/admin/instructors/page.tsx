@@ -148,6 +148,7 @@ const ManageInstructorsPage = () => {
                 <tr className="bg-white">
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Full Name</th>
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Email Identity</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Classes</th>
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Status</th>
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Actions</th>
                 </tr>
@@ -169,6 +170,11 @@ const ManageInstructorsPage = () => {
                     </td>
                     <td className="px-8 py-5">
                       <span className="text-xs font-medium text-gray-500">{inst.email}</span>
+                    </td>
+                    <td className="px-8 py-5 text-center">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600 uppercase tracking-tighter">
+                        {inst.class?.length || 0} {inst.class?.length === 1 ? 'Class' : 'Classes'}
+                      </span>
                     </td>
                     <td className="px-8 py-5 text-center">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-black text-white uppercase tracking-tighter shadow-sm">Verified</span>

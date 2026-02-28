@@ -100,6 +100,19 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
           />
         </div>
 
+        <div className="flex flex-col gap-1 mb-4">
+          <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Email Identity</label>
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="student@university.edu"
+            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
+            value={formData?.email || ''}
+            onChange={handleChange}
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">First Name</label>
@@ -120,7 +133,7 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
               name="lastName"
               required
               placeholder="e.g. Doe"
-              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
               value={formData?.lastName || ''}
               onChange={handleChange}
             />

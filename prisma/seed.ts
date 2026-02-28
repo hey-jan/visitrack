@@ -11,10 +11,10 @@ import { attendanceData } from './seed-data/attendanceData.ts';
 const prisma = new PrismaClient();
 
 interface StudentData {
+  studentNumber: string;
   firstName: string;
   lastName: string;
   email: string;
-  imageUrl: string;
   course: string;
   year: number;
   section: string;
@@ -97,12 +97,11 @@ async function main() {
 
     const createdStudent = await prisma.student.create({
       data: {
-        studentNumber: (student as any).studentNumber,
+        studentNumber: student.studentNumber,
         firstName: student.firstName,
         lastName: student.lastName,
-        slug: slugify(`${student.firstName} ${student.lastName}`, { lower: true }),
+        slug: student.studentNumber.toLowerCase().replace(/\s+/g, '-'),
         email: student.email,
-        imageUrl: student.imageUrl,
         courseId: course.id,
         year: student.year,
         section: student.section,
@@ -125,7 +124,6 @@ async function main() {
         data: {
           studentId: createdStudent.id,
           embedding: JSON.stringify(Array.from({ length: 128 }, () => Math.random())),
-          thumbnailUrl: student.imageUrl,
         },
       });
     }

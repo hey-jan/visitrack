@@ -54,7 +54,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const data = await request.json();
-    const { firstName, lastName, email, password } = data;
+    const { firstName, lastName, email, password, classIds } = data;
 
     const updateData: any = {};
     if (firstName) updateData.firstName = firstName;
@@ -76,14 +76,28 @@ export async function PATCH(
       }
     }
 
+    // Handle class reassignment
+    if (Array.isArray(classIds)) {
+      updateData.class = {
+        set: classIds.map((id: string) => ({ id }))
+      };
+    }
+
+    const instructor = await prisma.instructor.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+      select: { id: true }
+    });
+
+    if (!instructor) {
+      return NextResponse.json({ error: 'Instructor not found' }, { status: 404 });
+    }
+
     const updatedInstructor = await prisma.instructor.update({
-      where: { 
-        id: (await prisma.instructor.findFirst({
-          where: { OR: [{ id }, { slug: id }] },
-          select: { id: true }
-        }))?.id || id
-      },
+      where: { id: instructor.id },
       data: updateData,
+      include: {
+        class: true
+      }
     });
 
     const { password: _, ...instructorWithoutPassword } = updatedInstructor;
