@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ConfirmationModal from '@/components/features/shared/ConfirmationModal';
 import EditClassModal from '@/components/features/admin/classes/EditClassModal';
 import AddClassModal from '@/components/features/admin/classes/AddClassModal';
 
 const ManageClassesPage = () => {
+  const router = useRouter();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [classToDelete, setClassToDelete] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -19,7 +21,7 @@ const ManageClassesPage = () => {
   const fetchClasses = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/classes');
+      const res = await fetch('/api/classes', { cache: 'no-store' });
       const data = await res.json();
       setClasses(data);
     } catch (error) {
@@ -88,7 +90,7 @@ const ManageClassesPage = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Class Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Class Management</h1>
         <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">Course Scheduling & Logistics</p>
       </div>
 
@@ -132,13 +134,17 @@ const ManageClassesPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredClasses.map((cls, index) => (
-                  <tr key={index} className="hover:bg-gray-50/80 transition-colors group">
+                  <tr 
+                    key={index} 
+                    onClick={() => router.push(`/admin/classes/${cls.slug}`)}
+                    className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
+                  >
                     <td className="px-8 py-5">
                       <span className="text-xs font-mono font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100 uppercase">{cls.schedule || 'N/A'}</span>
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center">
-                        <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm">
+                        <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform">
                           {cls.name.charAt(0)}
                         </div>
                         <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{cls.name}</span>
@@ -153,14 +159,14 @@ const ManageClassesPage = () => {
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleEditClick(cls)}
+                          onClick={(e) => { e.stopPropagation(); handleEditClick(cls); }}
                           className="p-2 text-black hover:bg-gray-200 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <FaEdit size={14} />
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(cls)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(cls); }}
                           className="p-2 text-black hover:bg-gray-200 rounded-lg transition-colors"
                           title="Delete"
                         >

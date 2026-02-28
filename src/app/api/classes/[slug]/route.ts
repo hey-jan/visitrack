@@ -32,7 +32,8 @@ export async function GET(
                 section: true,
                 course: {
                   select: {
-                    courseName: true
+                    courseName: true,
+                    courseNo: true
                   }
                 },
                 facialData: {
@@ -71,7 +72,8 @@ export async function GET(
                       section: true,
                       course: {
                         select: {
-                          courseName: true
+                          courseName: true,
+                          courseNo: true
                         }
                       },
                       facialData: {
@@ -98,7 +100,8 @@ export async function GET(
       teacher: classDetails.instructor, // Map instructor to teacher
       students: classDetails.enrollments.map(e => ({
         ...e.student,
-        courseName: e.student.course?.courseName || 'N/A'
+        courseName: e.student.course?.courseName || 'N/A',
+        courseAcronym: e.student.course?.courseNo || 'N/A'
       }))
     };
 

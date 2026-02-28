@@ -1,28 +1,30 @@
+// src/lib/file-storage.ts
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function saveBase64Image(base64Data: string, subDir: 'facial-data' | 'snapshots' | 'students') {
+export async function saveBase64Image(base64Image: string, subDir: string = 'attendance') {
   try {
-    // Remove data:image/jpeg;base64, from the string
-    const base64Image = base64Data.split(';base64,').pop();
-    if (!base64Image) return null;
-
+    // Remove base64 prefix if exists
+    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+    
     const fileName = `${uuidv4()}.jpg`;
-    const relativePath = `/uploads/${subDir}/${fileName}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', subDir);
-    const absolutePath = path.join(uploadDir, fileName);
+    const absolutePath = path.join(process.cwd(), 'public', 'uploads', subDir, fileName); 
+    const dir = path.dirname(absolutePath);
 
     // Ensure directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
 
-    fs.writeFileSync(absolutePath, base64Image, { encoding: 'base64' });
-
-    return relativePath;
+    fs.writeFileSync(absolutePath, base64Data, { encoding: 'base64' });
+    
+    return {
+      imageUrl: `/uploads/${subDir}/${fileName}`,
+      fileName
+    };
   } catch (error) {
-    console.error('Error saving image:', error);
-    return null;
+    console.error('Error saving base64 image:', error);
+    throw new Error('Failed to save image');
   }
 }

@@ -1,18 +1,29 @@
 // src/app/api/students/[id]/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import slugify from 'slugify';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const student = await prisma.student.findUnique({
-      where: { id: id },
+    const { id: idOrSlug } = await params;
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { slug: idOrSlug }
+        ]
+      },
       include: {
         course: true,
         facialData: true,
+        enrollments: {
+          include: {
+            class: true,
+          },
+        },
       },
     });
     if (!student) {
@@ -37,8 +48,59 @@ export async function PUT(
     const body = await request.json();
     
     // Pick only the fields that exist in the Student model
-    const { firstName, lastName, email, imageUrl, courseId, year, section } = body;
+    const { firstName, lastName, email, imageUrl, courseId, year, section, studentNumber, isActive } = body;
     
+    const slug = (firstName && lastName) ? slugify(`${firstName} ${lastName}`, { lower: true }) : undefined;
+
+    // Check for uniqueness if fields are being updated
+    if (studentNumber) {
+      const existingStudentNumber = await prisma.student.findFirst({
+        where: { 
+          studentNumber,
+          NOT: { id }
+        }
+      });
+
+      if (existingStudentNumber) {
+        return NextResponse.json(
+          { error: `Student ID ${studentNumber} is already registered to another student.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (email) {
+      const existingEmail = await prisma.student.findFirst({
+        where: { 
+          email,
+          NOT: { id }
+        }
+      });
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: `Email ${email} is already in use by another student.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (slug) {
+      const existingSlug = await prisma.student.findFirst({
+        where: { 
+          slug,
+          NOT: { id }
+        }
+      });
+
+      if (existingSlug) {
+        return NextResponse.json(
+          { error: `A student named "${firstName} ${lastName}" is already registered. Please use a unique name variant.` },
+          { status: 400 }
+        );
+      }
+    }
+
     const updatedStudent = await prisma.student.update({
       where: { id: id },
       data: {
@@ -49,6 +111,9 @@ export async function PUT(
         courseId,
         year: year ? parseInt(year.toString()) : undefined,
         section,
+        studentNumber,
+        slug,
+        isActive: isActive !== undefined ? isActive : undefined,
       },
     });
     return NextResponse.json(updatedStudent);

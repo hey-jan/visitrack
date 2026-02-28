@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaEnvelope, FaBookOpen, FaArrowLeft, FaGraduationCap, FaSchool, FaUserGraduate, FaCamera } from 'react-icons/fa';
+import { FaEnvelope, FaBookOpen, FaArrowLeft, FaGraduationCap, FaSchool, FaUserGraduate, FaCamera, FaAward, FaCircle } from 'react-icons/fa';
 
 const StudentProfilePage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const router = useRouter();
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -13,9 +13,16 @@ const StudentProfilePage = () => {
   useEffect(() => {
     const fetchStudent = async () => {
       try {
-        const res = await fetch(`/api/students/${id}`);
+        const res = await fetch(`/api/students/${slug}`);
         if (res.ok) {
           const foundStudent = await res.json();
+          
+          // Enforce slug in URL: If the current URL param matches the ID instead of the slug, redirect to the slug URL
+          if (foundStudent.slug && slug !== foundStudent.slug) {
+            router.replace(`/admin/students/${foundStudent.slug}`);
+            return;
+          }
+
           setStudent({
             ...foundStudent,
             name: `${foundStudent.firstName} ${foundStudent.lastName}`,
@@ -30,7 +37,7 @@ const StudentProfilePage = () => {
     };
 
     fetchStudent();
-  }, [id]);
+  }, [slug]);
 
   if (loading) {
     return (
@@ -61,19 +68,27 @@ const StudentProfilePage = () => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
+  const handleBack = () => {
+    if (student?.course?.slug) {
+      router.push(`/admin/students/course/${student.course.slug}`);
+    } else {
+      router.push('/admin/students');
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       {/* Header Navigation */}
       <div className="flex items-center mb-8">
         <button 
-          onClick={() => router.push('/admin/students')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2"
+          onClick={handleBack}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2 text-gray-600"
         >
-          <FaArrowLeft className="text-black" size={18} />
+          <FaArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Student Profile</h1>
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Directory / {student.name}</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Student Profile</h1>
+          <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">Directory / {student.name}</p>
         </div>
       </div>
 
@@ -81,12 +96,8 @@ const StudentProfilePage = () => {
         {/* Left Column: Profile Overview */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-            <div className="h-24 w-24 rounded-2xl bg-black text-white flex items-center justify-center text-3xl font-bold mx-auto mb-6 shadow-lg shadow-black/10 overflow-hidden">
-              {student.imageUrl ? (
-                <img src={student.imageUrl} alt={student.name} className="w-full h-full object-cover" />
-              ) : (
-                getInitials(student.name)
-              )}
+            <div className="h-24 w-24 rounded-2xl bg-black text-white flex items-center justify-center text-3xl font-bold mx-auto mb-6 shadow-lg shadow-black/10 overflow-hidden uppercase">
+              {getInitials(student.name)}
             </div>
             <h2 className="text-xl font-bold text-gray-900">{student.name}</h2>
             <div className="flex items-center justify-center text-gray-500 text-sm mt-2">
@@ -94,16 +105,10 @@ const StudentProfilePage = () => {
               {student.email}
             </div>
             
-            <div className="mt-8 pt-8 border-t border-gray-100 space-y-4">
-              <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Program</span>
-                <span className="text-xs font-bold text-black bg-white px-3 py-1 rounded-lg border border-gray-200 shadow-sm">
-                  {student.courseName}
-                </span>
-              </div>
-              <div className="flex justify-between items-center px-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Registered</span>
-                <span className="text-xs font-semibold text-gray-700">{registrationDate}</span>
+            <div className="mt-8 pt-8 border-t border-gray-100 space-y-4 text-left">
+              <div className="flex flex-col gap-1 px-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Registry Date</span>
+                <span className="text-sm font-bold text-gray-900">{registrationDate}</span>
               </div>
             </div>
           </div>
@@ -142,15 +147,31 @@ const StudentProfilePage = () => {
 
         {/* Right Column: Academic Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Main Info Grid */}
+          {/* Program Card */}
+          <div 
+            onClick={() => student?.course?.slug && router.push(`/admin/students/course/${student.course.slug}`)}
+            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center cursor-pointer hover:border-black transition-all group/card"
+          >
+            <div className="h-12 w-12 bg-gray-50 rounded-xl flex items-center justify-center mr-5 shrink-0 group-hover/card:bg-black group-hover/card:text-white transition-colors">
+              <FaGraduationCap size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Enrolled Program</p>
+              <h2 className="text-base font-bold text-gray-900 uppercase tracking-tight leading-tight group-hover/card:text-black transition-colors">
+                {student.courseName}
+              </h2>
+            </div>
+          </div>
+
+          {/* Classification Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center">
               <div className="h-12 w-12 bg-gray-50 rounded-xl flex items-center justify-center mr-4">
-                <FaGraduationCap className="text-black" size={20} />
+                <FaUserGraduate className="text-black" size={20} />
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Classification</p>
-                <p className="text-lg font-bold text-gray-900">Year {student.year}</p>
+                <p className="text-base font-bold text-gray-900 uppercase tracking-tight">Year {student.year}</p>
               </div>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center">
@@ -159,7 +180,7 @@ const StudentProfilePage = () => {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Assigned Section</p>
-                <p className="text-lg font-bold text-gray-900">Section {student.section}</p>
+                <p className="text-base font-bold text-gray-900 uppercase tracking-tight">Section {student.section}</p>
               </div>
             </div>
           </div>
@@ -179,26 +200,37 @@ const StudentProfilePage = () => {
             <div className="divide-y divide-gray-50">
               {student.enrollments && student.enrollments.length > 0 ? (
                 student.enrollments.map((enrollment: any) => (
-                  <div key={enrollment.classId} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                  <div key={enrollment.classId} className={`p-6 flex items-center justify-between hover:bg-gray-50 transition-colors ${enrollment.status === 'DROPPED' ? 'opacity-50' : ''}`}>
                     <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-black font-bold text-sm shadow-sm">
+                      <div className="h-10 w-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-black font-bold text-sm shadow-sm uppercase">
                         {enrollment.class.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">{enrollment.class.name}</p>
+                        <p className="text-sm font-bold text-gray-900 uppercase">{enrollment.class.name}</p>
                         <p className="text-[11px] text-gray-500 font-medium">
                           {enrollment.class.days} • {enrollment.class.time}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Location</p>
-                      <p className="text-xs font-bold text-black uppercase">Room {enrollment.class.room}</p>
+                    <div className="flex items-center gap-8">
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Status</p>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <FaCircle size={6} className={enrollment.status === 'ENROLLED' ? 'text-black' : 'text-gray-300'} />
+                          <span className={`text-[10px] font-bold uppercase tracking-widest ${enrollment.status === 'ENROLLED' ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                            {enrollment.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right w-24">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Location</p>
+                        <p className="text-xs font-bold text-black uppercase">Room {enrollment.class.room}</p>
+                      </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="p-12 text-center text-gray-400 text-sm font-medium italic">
+                <div className="p-12 text-center text-gray-400 text-sm font-medium italic uppercase tracking-widest">
                   No active subjects found.
                 </div>
               )}
