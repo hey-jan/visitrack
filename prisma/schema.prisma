@@ -80,9 +80,10 @@ model Admin {
 
 model Class {
   id           String       @id @default(cuid())
-  name         String
+  code         String
+  title        String
   slug         String       @unique
-  instructorId String
+  instructorId String?
   room         String
   schedule     String
   days         String
@@ -90,7 +91,7 @@ model Class {
   units        Int?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  instructor   Instructor   @relation(fields: [instructorId], references: [id])
+  instructor   Instructor?  @relation(fields: [instructorId], references: [id])
   enrollments  Enrollment[]
   sessions     Session[]
 }

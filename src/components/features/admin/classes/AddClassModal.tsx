@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
+import InstructorSelector from '@/components/features/shared/InstructorSelector';
 
 interface AddClassModalProps {
   isOpen: boolean;
@@ -11,7 +12,8 @@ interface AddClassModalProps {
 
 const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState<any>({
-    name: '',
+    code: '',
+    title: '',
     schedule: '',
     time: '',
     days: '',
@@ -20,28 +22,47 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
     instructorId: '',
   });
   const [instructors, setInstructors] = useState<any[]>([]);
+  const [isLoadingInstructors, setIsLoadingInstructors] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      setFormData({
+        code: '',
+        title: '',
+        schedule: '',
+        time: '',
+        days: '',
+        room: '',
+        units: '',
+        instructorId: '',
+      });
+    } else {
       const fetchInstructors = async () => {
+        setIsLoadingInstructors(true);
         try {
           const res = await fetch('/api/instructors');
           const data = await res.json();
           setInstructors(data);
         } catch (error) {
           console.error('Failed to fetch instructors:', error);
+        } finally {
+          setIsLoadingInstructors(false);
         }
       };
       fetchInstructors();
     }
   }, [isOpen]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ 
       ...prev, 
       [name]: name === 'units' ? parseInt(value) || '' : value 
     }));
+  };
+
+  const handleInstructorSelect = (id: string) => {
+    setFormData((prev: any) => ({ ...prev, instructorId: id }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,16 +81,6 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
         const newClass = await res.json();
         onSave(newClass);
         onClose();
-        // Reset form
-        setFormData({
-          name: '',
-          schedule: '',
-          time: '',
-          days: '',
-          room: '',
-          units: '',
-          instructorId: '',
-        });
       } else {
         const error = await res.json();
         alert(error.error || 'Failed to add class');
@@ -85,52 +96,47 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Schedule No.</label>
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Schedule No.</label>
             <input
               type="text"
               name="schedule"
               required
               placeholder="e.g. 12345"
-              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all font-bold"
               onChange={handleChange}
               value={formData.schedule}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Class Name</label>
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Class Code</label>
             <input
               type="text"
-              name="name"
+              name="code"
               required
-              placeholder="e.g. CS 101"
-              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
+              placeholder="e.g. CS-101"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all font-bold"
               onChange={handleChange}
-              value={formData.name}
+              value={formData.code}
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1 mb-4">
-          <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Assigned Instructor</label>
-          <select
-            name="instructorId"
+          <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Descriptive Title</label>
+          <input
+            type="text"
+            name="title"
             required
-            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 transition-all appearance-none"
+            placeholder="e.g. Computer Science Fundamentals"
+            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-300 transition-all"
             onChange={handleChange}
-            value={formData.instructorId}
-          >
-            <option value="">Select Instructor</option>
-            {instructors.map((ins) => (
-              <option key={ins.id} value={ins.id}>
-                {ins.firstName} {ins.lastName}
-              </option>
-            ))}
-          </select>
+            value={formData.title}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Time</label>
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Time</label>
             <input
               type="text"
               name="time"
@@ -142,7 +148,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Days</label>
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Days</label>
             <input
               type="text"
               name="days"
@@ -155,9 +161,9 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Room</label>
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Room</label>
             <input
               type="text"
               name="room"
@@ -169,7 +175,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase font-black text-gray-400 tracking-widest ml-1">Units</label>
+            <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Units</label>
             <input
               type="number"
               name="units"
@@ -180,6 +186,17 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onSave }
               value={formData.units}
             />
           </div>
+        </div>
+
+        {/* Shared Instructor Selector */}
+        <div className="mb-8">
+          <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1 block mb-2">Assign Instructor</label>
+          <InstructorSelector 
+            instructors={instructors}
+            selectedId={formData.instructorId}
+            onSelect={handleInstructorSelect}
+            emptyMessage="No instructors available"
+          />
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">

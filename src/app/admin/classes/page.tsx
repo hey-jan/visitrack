@@ -37,7 +37,8 @@ const ManageClassesPage = () => {
 
   const filteredClasses = useMemo(() =>
     classes.filter(cls =>
-      (cls.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (cls.code?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (cls.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       (cls.schedule?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
     ),
     [classes, searchTerm]
@@ -100,7 +101,7 @@ const ManageClassesPage = () => {
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-black opacity-30" />
             <input
               type="text"
-              placeholder="Search by name or schedule..."
+              placeholder="Search by code, title or schedule..."
               className="w-full bg-white border border-gray-200 rounded-xl pl-11 pr-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-black outline-none transition-all placeholder:text-gray-400 font-medium"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -125,7 +126,7 @@ const ManageClassesPage = () => {
               <thead>
                 <tr className="bg-white">
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Sched No.</th>
-                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Class Name</th>
+                  <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Class Detail</th>
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Schedule</th>
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Room</th>
                   <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Units</th>
@@ -144,10 +145,13 @@ const ManageClassesPage = () => {
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center">
-                        <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform">
-                          {cls.name.charAt(0)}
+                        <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform uppercase">
+                          {cls.code.substring(0, 2)}
                         </div>
-                        <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{cls.name}</span>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 text-sm uppercase tracking-tight">{cls.code}</span>
+                          <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{cls.title}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-8 py-5 text-center">
@@ -187,7 +191,7 @@ const ManageClassesPage = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
         title="Archive Class"
-        message={`Confirm deletion of ${classToDelete?.name} from course registry.`}
+        message={`Confirm deletion of ${classToDelete?.code}: ${classToDelete?.title} from course registry.`}
       />
 
       {classToEdit && (

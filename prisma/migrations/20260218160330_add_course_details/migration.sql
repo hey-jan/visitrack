@@ -1,6 +1,0 @@
--- AlterTable
-ALTER TABLE "Course" ADD COLUMN "days" TEXT;
-ALTER TABLE "Course" ADD COLUMN "room" TEXT;
-ALTER TABLE "Course" ADD COLUMN "schedNo" TEXT;
-ALTER TABLE "Course" ADD COLUMN "time" TEXT;
-ALTER TABLE "Course" ADD COLUMN "units" INTEGER;

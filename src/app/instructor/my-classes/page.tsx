@@ -5,7 +5,7 @@ import { FaSearch, FaCalendarAlt, FaClock, FaArrowRight, FaMapMarkerAlt } from '
 
 interface Class {
   id: string;
-  name: string;
+  code: string;
   slug: string;
   room: string;
   schedule: string;
@@ -46,7 +46,7 @@ const MyClassesPage = () => {
   }, []);
 
   const filteredClasses = classes.filter((classInfo) =>
-    classInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    classInfo.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.room.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.days.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classInfo.time.toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,17 +92,17 @@ const MyClassesPage = () => {
                   </div>
 
                   <h2 className="text-2xl font-bold text-black uppercase tracking-tight leading-tight mb-6">
-                    {classInfo.name}
+                    {classInfo.code}
                   </h2>
 
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-50 group-hover:border-gray-100 transition-colors">
                       <FaCalendarAlt size={12} className="text-black" />
-                      <span className="text-[10px] font-bold text-gray-700 uppercase tracking-[0.1em]">{classInfo.days}</span>
+                      <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest">{classInfo.days}</span>
                     </div>
                     <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-50 group-hover:border-gray-100 transition-colors">
                       <FaClock size={12} className="text-black" />
-                      <span className="text-[10px] font-bold text-gray-700 uppercase tracking-[0.1em]">{classInfo.time}</span>
+                      <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest">{classInfo.time}</span>
                     </div>
                   </div>
                 </div>

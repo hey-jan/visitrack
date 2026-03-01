@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { FaCamera } from 'react-icons/fa';
 import CameraView from './CameraView';
 import Modal from '@/components/ui/Modal';
+import ClassSelector from '@/components/features/shared/ClassSelector';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -16,15 +17,10 @@ interface Course {
   courseName: string;
 }
 
-interface Class {
-  id: string;
-  name: string;
-}
-
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onStudentAdded }) => {
   const [showCamera, setShowCamera] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [capturedImages, setCapturedImages] = useState<{ front: string; left: string; right: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -129,12 +125,18 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
         });
 
         const uploadedImages = await Promise.all(uploadPromises);
-        facialData = uploadedImages.map(({ embedding, thumbnailUrl }) => ({ embedding, thumbnailUrl }));
+        facialData = uploadedImages.map(({ embedding, thumbnailUrl }) => ({ 
+          embedding, 
+          thumbnailUrl: typeof thumbnailUrl === 'object' && thumbnailUrl !== null ? (thumbnailUrl as any).imageUrl : thumbnailUrl 
+        }));
         
         // Use the front image as the main profile picture
         const frontImage = uploadedImages.find(img => img.key === 'front');
         if (frontImage) {
-          (formData as any).imageUrl = frontImage.thumbnailUrl;
+          const url = typeof frontImage.thumbnailUrl === 'object' && frontImage.thumbnailUrl !== null 
+            ? (frontImage.thumbnailUrl as any).imageUrl 
+            : frontImage.thumbnailUrl;
+          (formData as any).imageUrl = url;
         }
       }
 
@@ -277,28 +279,15 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSt
             </div>
           </div>
 
-          {/* Class Enrollment Section */}
+          {/* Shared Class Enrollment Section */}
           <div className="mb-6">
             <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1 block mb-2">Class Enrollment</label>
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4 max-h-40 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-1 gap-2">
-                {classes.length > 0 ? (
-                  classes.map((cls) => (
-                    <label key={cls.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg transition-all cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black transition-all cursor-pointer"
-                        checked={selectedClasses.includes(cls.id)}
-                        onChange={() => handleClassToggle(cls.id)}
-                      />
-                      <span className="text-xs font-bold text-black uppercase tracking-tight">{cls.name}</span>
-                    </label>
-                  ))
-                ) : (
-                  <p className="text-[10px] text-gray-400 italic text-center py-2 uppercase font-bold tracking-widest">No classes available</p>
-                )}
-              </div>
-            </div>
+            <ClassSelector 
+              classes={classes}
+              selectedIds={selectedClasses}
+              onToggle={handleClassToggle}
+              emptyMessage="No classes available for enrollment"
+            />
           </div>
 
           {/* Status Toggle */}

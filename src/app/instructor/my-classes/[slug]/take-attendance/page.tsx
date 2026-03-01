@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaArrowLeft, FaCamera, FaUserCheck, FaStop, FaPlay, FaCheckCircle } from 'react-icons/fa';
+import { FaCamera, FaUserCheck, FaStop, FaPlay, FaCheckCircle } from 'react-icons/fa';
 import Webcam from 'react-webcam';
 
 interface Student {
@@ -14,7 +14,7 @@ interface Student {
 
 interface ClassDetails {
   id: string;
-  name: string;
+  code: string;
   students: Student[];
 }
 
@@ -205,14 +205,9 @@ const TakeAttendancePage = () => {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <button 
-            onClick={() => router.back()}
-            className="flex items-center text-black hover:opacity-60 transition-all text-xs font-bold uppercase tracking-widest mb-4"
-          >
-            <FaArrowLeft className="mr-2" /> Back
-          </button>
+          <BackButton variant="text" label="Back" />
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Attendance Session</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">{classDetails.name}</p>
+          <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">{classDetails.code}</p>
         </div>
 
         <div className="flex gap-4">
@@ -247,7 +242,7 @@ const TakeAttendancePage = () => {
                   <FaCheckCircle size={40} className="text-green-600" />
                 </div>
                 <p className="text-sm font-black text-green-800 uppercase tracking-[0.2em]">Attendance Recorded</p>
-                <p className="text-[10px] text-green-600 mt-2 font-bold uppercase">Class: {classDetails.name} • {new Date().toLocaleDateString()}</p>
+                <p className="text-[10px] text-green-600 mt-2 font-bold uppercase">Class: {classDetails.code} • {new Date().toLocaleDateString()}</p>
               </div>
             ) : isSessionActive ? (
               <>

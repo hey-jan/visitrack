@@ -96,12 +96,13 @@ const ViewStudentModal: React.FC<ViewStudentModalProps> = ({ isOpen, onClose, st
                     className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-transparent hover:border-gray-200 transition-all group"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center text-black text-[10px] font-black border border-gray-100 shadow-sm group-hover:scale-110 transition-transform">
-                        {enrollment.class.name.substring(0, 2).toUpperCase()}
+                      <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center text-black text-[10px] font-black border border-gray-100 shadow-sm group-hover:scale-110 transition-transform uppercase">
+                        {enrollment.class.code.substring(0, 2)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">{enrollment.class.name}</p>
-                        <p className="text-[10px] text-gray-500 font-medium">
+                        <p className="text-sm font-bold text-gray-900 uppercase">{enrollment.class.code}</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">{enrollment.class.title}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">
                           {enrollment.class.days} • {enrollment.class.time}
                         </p>
                       </div>

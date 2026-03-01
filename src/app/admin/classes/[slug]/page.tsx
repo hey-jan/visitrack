@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaArrowLeft, FaChalkboardTeacher, FaUsers, FaClock, FaDoorOpen, FaGraduationCap, FaUserGraduate, FaSchool, FaCircle } from 'react-icons/fa';
+import { FaUsers, FaClock, FaGraduationCap, FaExclamationTriangle, FaInfoCircle, FaDoorOpen, FaBook, FaChalkboardTeacher, FaCalendarAlt, FaLayerGroup } from 'react-icons/fa';
+import BackButton from '@/components/features/shared/BackButton';
 
 const ClassProfilePage = () => {
   const { slug } = useParams();
@@ -52,154 +53,193 @@ const ClassProfilePage = () => {
     : 'Not Assigned';
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       {/* Header Navigation */}
-      <div className="flex items-center mb-8">
-        <button 
-          onClick={() => router.push('/admin/classes')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2 text-gray-600"
-        >
-          <FaArrowLeft size={18} />
-        </button>
+      <div className="flex items-center">
+        <BackButton href="/admin/classes" />
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Class Details</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">Registry • {classData.name}</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase leading-none">Class Profile</h1>
+          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">Administrative Registry</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Info Overview */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-            <div className="h-24 w-24 rounded-2xl bg-black text-white flex items-center justify-center text-3xl font-bold mx-auto mb-6 shadow-lg shadow-black/10 overflow-hidden uppercase">
-              {classData.name.charAt(0)}
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">{classData.name}</h2>
-            <div className="flex items-center justify-center text-gray-500 text-sm mt-2 font-mono font-bold">
-              <span className="bg-gray-50 px-3 py-1 rounded border border-gray-100">
-                SCHED: {classData.schedule}
-              </span>
-            </div>
-            
-            <div className="mt-8 pt-8 border-t border-gray-100 space-y-4 text-left">
-              <div className="flex flex-col gap-1 px-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Assigned Instructor</span>
-                <span className="text-sm font-bold text-gray-900 uppercase">{teacherName}</span>
-              </div>
-              <div className="flex flex-col gap-1 px-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Academic Units</span>
-                <span className="text-sm font-bold text-gray-900">{classData.units || '0'} Units</span>
-              </div>
-            </div>
+      {/* Top Section: Info Summary */}
+      <div className="space-y-6">
+        {/* Class Identity Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center gap-6">
+          <div className="h-20 w-20 rounded-2xl bg-black text-white flex items-center justify-center text-3xl font-black shadow-lg shadow-black/10 shrink-0 uppercase">
+            {classData.code.charAt(0)}
           </div>
-
-          {/* Schedule/Location Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center">
-              <FaClock className="mr-3 text-black" size={16} />
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Logistics</h3>
-            </div>
-            <div className="p-6 space-y-5">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-gray-50 rounded-xl flex items-center justify-center text-black shrink-0">
-                  <FaClock size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Schedule</p>
-                  <p className="text-sm font-bold text-gray-900 uppercase">{classData.days} • {classData.time}</p>
-                </div>
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-tight truncate">{classData.code}</h2>
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mt-0.5">{classData.title || 'Untitled Course'}</p>
+            
+            <div className="flex gap-4 mt-4">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Schedule No.</span>
+                <span className="text-xs font-mono font-bold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-100 uppercase mt-0.5">
+                  {classData.schedule}
+                </span>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-gray-50 rounded-xl flex items-center justify-center text-black shrink-0">
-                  <FaDoorOpen size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Location</p>
-                  <p className="text-sm font-bold text-gray-900 uppercase">Room {classData.room}</p>
+              <div className="flex flex-col border-l border-gray-100 pl-4">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Instructor In-Charge</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <FaChalkboardTeacher size={10} className="text-black/30" />
+                  <span className="text-xs font-bold text-gray-900 uppercase">{teacherName}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Student Roster */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Enrollment Card */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center">
-            <div className="h-12 w-12 bg-gray-50 rounded-xl flex items-center justify-center mr-5 shrink-0">
-              <FaUsers className="text-black" size={20} />
+        {/* Individual Metric Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Schedule */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center">
+            <div className="h-10 w-10 bg-gray-50 rounded-xl flex items-center justify-center mr-4 shrink-0 text-black">
+              <FaCalendarAlt size={16} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Schedule</p>
+              <h2 className="text-xs font-bold text-gray-900 uppercase tracking-tight truncate">
+                {classData.days}
+              </h2>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                {classData.time}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Room */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center">
+            <div className="h-10 w-10 bg-gray-50 rounded-xl flex items-center justify-center mr-4 shrink-0 text-black">
+              <FaDoorOpen size={16} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Enrolled Students</p>
-              <h2 className="text-base font-bold text-gray-900 uppercase tracking-tight leading-tight">
-                {classData.students?.length || 0} Total Records
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Room</p>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                {classData.room}
               </h2>
             </div>
           </div>
 
-          {/* Roster Table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <div className="flex items-center">
-                <FaGraduationCap className="mr-3 text-black" size={16} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Class Roster</h3>
+          {/* Card 3: Enrollment */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center">
+            <div className="h-10 w-10 bg-gray-50 rounded-xl flex items-center justify-center mr-4 shrink-0 text-black">
+              <FaUsers size={16} />
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Enrolled</p>
+              <div className="flex items-baseline gap-1.5">
+                <h2 className="text-lg font-black text-gray-900 leading-none">
+                  {classData.students?.length || 0}
+                </h2>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Students</span>
               </div>
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/30 border-b border-gray-100">
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Full Name</th>
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Program</th>
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Section</th>
-                    <th className="px-8 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Profile</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {classData.students && classData.students.length > 0 ? (
-                    classData.students.map((student: any) => (
-                      <tr 
-                        key={student.id} 
-                        className="group hover:bg-gray-50/80 transition-colors"
-                      >
-                        <td className="px-8 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="h-9 w-9 bg-black rounded-lg overflow-hidden shadow-sm flex items-center justify-center text-white text-[10px] font-bold uppercase">
-                              {student.firstName[0]}{student.lastName[0]}
-                            </div>
-                            <span className="font-semibold text-gray-900 text-sm tracking-tight">{student.firstName} {student.lastName}</span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5 text-center">
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-tight bg-gray-100 text-gray-700">
-                            {student.courseAcronym} {student.year}
-                          </span>
-                        </td>
-                        <td className="px-8 py-5 text-center">
-                          <span className="text-xs font-medium text-gray-600">{student.section}</span>
-                        </td>
-                        <td className="px-8 py-5 text-right">
-                          <button 
-                            onClick={() => router.push(`/admin/students/${student.slug || student.id}`)}
-                            className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="py-20 text-center text-gray-400 text-sm font-medium italic uppercase tracking-widest">
-                        No students enrolled in this class.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+          </div>
+
+          {/* Card 4: Units */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center">
+            <div className="h-10 w-10 bg-gray-50 rounded-xl flex items-center justify-center mr-4 shrink-0 text-black">
+              <FaLayerGroup size={16} />
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Credits</p>
+              <div className="flex items-baseline gap-1.5">
+                <h2 className="text-lg font-black text-gray-900 leading-none">
+                  {classData.units || '0'}
+                </h2>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Units</span>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mt-4">
+        <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+          <div className="flex items-center">
+            <FaGraduationCap className="mr-3 text-black" size={16} />
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Master Class Roster</h3>
+          </div>
+          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-white px-2.5 py-1 rounded-full border border-gray-100">
+            {classData.students?.length || 0} Records Found
+          </span>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/30 border-b border-gray-100">
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Full Name</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Program</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Year</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Attendance</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {classData.students && classData.students.length > 0 ? (
+                classData.students.map((student: any) => (
+                  <tr 
+                    key={student.id} 
+                    className="group hover:bg-gray-50/80 transition-colors cursor-default animate-in fade-in duration-500"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-black rounded-lg overflow-hidden shadow-sm flex items-center justify-center text-white text-[9px] font-bold uppercase transition-transform group-hover:scale-105">
+                          {student.firstName[0]}{student.lastName[0]}
+                        </div>
+                        <span className="font-semibold text-gray-900 text-sm tracking-tight">
+                          {student.firstName} {student.lastName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-tight bg-gray-100 text-gray-700">
+                        {student.courseAcronym}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center text-sm font-medium text-gray-600">
+                      {student.year}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="inline-flex flex-col items-center">
+                        <span className="text-sm font-bold text-gray-900">
+                          {student.attendancePercentage !== null ? `${student.attendancePercentage}%` : 'N/A'}
+                        </span>
+                        {student.absences >= 10 && (
+                          <div className="flex items-center gap-1 text-[7px] font-black text-black uppercase tracking-tighter mt-0.5">
+                            <FaExclamationTriangle size={7} />
+                            DROPOUT RISK
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); router.push(`/admin/students/${student.slug || student.id}`); }}
+                        className="bg-gray-50 hover:bg-black hover:text-white text-gray-400 text-[9px] font-bold uppercase tracking-widest py-1.5 px-3 rounded-lg border border-gray-100 transition-all active:scale-95"
+                      >
+                        View Profile
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-24 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <FaUsers size={40} className="text-gray-200" />
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest italic">No students currently enrolled</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

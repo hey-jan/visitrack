@@ -37,6 +37,7 @@ export async function GET(
     }
 
     const { password: _, ...instructorWithoutPassword } = instructor;
+    
     return NextResponse.json(instructorWithoutPassword);
   } catch (error) {
     console.error('Error fetching instructor:', error);
@@ -101,6 +102,7 @@ export async function PATCH(
     });
 
     const { password: _, ...instructorWithoutPassword } = updatedInstructor;
+    
     return NextResponse.json(instructorWithoutPassword);
   } catch (error) {
     console.error('Error updating instructor:', error);

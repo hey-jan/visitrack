@@ -9,7 +9,6 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    // Try to find by Slug first, then by ID
     let classDetails = await prisma.class.findUnique({
       where: { slug: slug },
       include: {
@@ -20,11 +19,17 @@ export async function GET(
             lastName: true,
           },
         },
+        sessions: {
+          include: {
+            Attendance: true,
+          }
+        },
         enrollments: {
           include: {
             student: {
               select: {
                 id: true,
+                studentNumber: true,
                 firstName: true,
                 lastName: true,
                 email: true,
@@ -60,11 +65,17 @@ export async function GET(
                   lastName: true,
                 },
               },
+              sessions: {
+                include: {
+                  Attendance: true,
+                }
+              },
               enrollments: {
                 include: {
                   student: {
                     select: {
                       id: true,
+                      studentNumber: true,
                       firstName: true,
                       lastName: true,
                       email: true,
@@ -94,15 +105,31 @@ export async function GET(
       return NextResponse.json({ error: 'Class not found.' }, { status: 404 });
     }
 
-    // Flatten enrollments to just students for the frontend
+    const totalSessions = classDetails.sessions.length;
+
     const flattenedClassDetails = {
       ...classDetails,
-      teacher: classDetails.instructor, // Map instructor to teacher
-      students: classDetails.enrollments.map(e => ({
-        ...e.student,
-        courseName: e.student.course?.courseName || 'N/A',
-        courseAcronym: e.student.course?.courseNo || 'N/A'
-      }))
+      teacher: classDetails.instructor,
+      students: classDetails.enrollments.map(e => {
+        const studentId = e.student.id;
+        const attendedCount = classDetails!.sessions.filter(session => 
+          session.Attendance.some(att => att.studentId === studentId && (att.status === 'Present' || att.status === 'Late'))
+        ).length;
+
+        const absences = totalSessions - attendedCount;
+        const attendancePercentage = totalSessions > 0 
+          ? Math.round((attendedCount / totalSessions) * 100) 
+          : null;
+
+        return {
+          ...e.student,
+          enrollmentStatus: e.status || 'Enrolled',
+          courseName: e.student.course?.courseName || 'N/A',
+          courseAcronym: e.student.course?.courseNo || 'N/A',
+          attendancePercentage,
+          absences
+        };
+      })
     };
 
     return NextResponse.json(flattenedClassDetails);
@@ -122,11 +149,8 @@ export async function PUT(
   try {
     const { slug } = await params;
     const body = await request.json();
+    const { code, title, instructorId, room, schedule, days, time, units } = body;
 
-    // Pick only the fields that exist in the Class model
-    const { name, instructorId, room, schedule, days, time, units } = body;
-
-    // Resolve the actual ID first
     let classToUpdate = await prisma.class.findUnique({
       where: { slug: slug },
       select: { id: true }
@@ -143,13 +167,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Class not found.' }, { status: 404 });
     }
 
-    // Generate a new slug if name is provided
-    const newSlug = name ? slugify(name, { lower: true, strict: true }) : undefined;
+    const newSlug = (code && schedule) ? slugify(`${code}-${schedule}`, { lower: true, strict: true }) : undefined;
 
     const updatedClass = await prisma.class.update({
       where: { id: classToUpdate.id },
       data: {
-        name,
+        code,
+        title,
         slug: newSlug,
         instructorId,
         room,
@@ -175,8 +199,6 @@ export async function DELETE(
 ) {
   try {
     const { slug } = await params;
-
-    // Resolve the actual ID first
     let classToDelete = await prisma.class.findUnique({
       where: { slug: slug },
       select: { id: true }
@@ -195,9 +217,7 @@ export async function DELETE(
 
     const classId = classToDelete.id;
 
-    // Use a transaction to clean up all related class data
     await prisma.$transaction(async (tx) => {
-      // 1. Delete all Attendance records linked to sessions of this class
       await tx.attendance.deleteMany({
         where: {
           session: {
@@ -205,22 +225,16 @@ export async function DELETE(
           }
         }
       });
-
-      // 2. Delete all Sessions linked to this class
       await tx.session.deleteMany({
         where: {
           classId: classId
         }
       });
-
-      // 3. Delete all Enrollments linked to this class
       await tx.enrollment.deleteMany({
         where: {
           classId: classId
         }
       });
-
-      // 4. Finally, delete the Class itself
       await tx.class.delete({
         where: {
           id: classId

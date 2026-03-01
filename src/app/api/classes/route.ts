@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         },
       },
     });
+
     return NextResponse.json(classes);
   } catch (error) {
     console.error('Error fetching classes:', error);
@@ -37,21 +38,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { name, instructorId, room, schedule, days, time, units } = data;
+    const { code, title, instructorId, room, schedule, days, time, units } = data;
 
-    if (!name || !instructorId || !schedule) {
+    if (!code || !title || !instructorId || !schedule) {
       return NextResponse.json(
-        { error: 'Name, Instructor ID, and Schedule are required.' },
+        { error: 'Code, Title, Instructor ID, and Schedule are required.' },
         { status: 400 }
       );
     }
 
-    // Generate a slug from the name
-    const slug = slugify(name, { lower: true, strict: true });
+    // Generate a slug from code and schedule
+    const slug = slugify(`${code}-${schedule}`, { lower: true, strict: true });
 
     const newClass = await prisma.class.create({
       data: {
-        name,
+        code,
+        title,
         slug,
         instructorId,
         room,
@@ -77,7 +79,7 @@ export async function POST(request: Request) {
     // Handle unique constraint violation for slug
     if ((error as any).code === 'P2002') {
       return NextResponse.json(
-        { error: 'A class with this name already exists.' },
+        { error: 'A class with this code and schedule already exists.' },
         { status: 400 }
       );
     }

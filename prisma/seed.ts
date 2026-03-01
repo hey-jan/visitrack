@@ -56,6 +56,7 @@ async function main() {
       data: {
         ...instructor,
         password: hashedPassword,
+        slug: slugify(`${instructor.firstName} ${instructor.lastName}`, { lower: true }),
       },
     });
     instructorMap.set(instructor.email, createdInstructor);
@@ -66,14 +67,15 @@ async function main() {
   for (const aClass of classesData) {
     const instructor = instructorMap.get(aClass.instructorEmail);
     if (!instructor) {
-      console.warn(`Instructor not found for class: ${aClass.name}`);
+      console.warn(`Instructor not found for class: ${aClass.code}`);
       continue;
     }
     const createdClass = await prisma.class.create({
       data: {
-        name: aClass.name,
+        code: aClass.code,
+        title: aClass.title,
         // Include schedule number in slug for uniqueness
-        slug: slugify(`${aClass.name}-${aClass.schedule}`, { lower: true }),
+        slug: slugify(`${aClass.code}-${aClass.schedule}`, { lower: true }),
         instructorId: instructor.id,
         room: aClass.room,
         schedule: aClass.schedule,
@@ -82,8 +84,8 @@ async function main() {
         units: aClass.units,
       },
     });
-    // Use unique identifier for mapping (name + schedule)
-    classMap.set(`${aClass.name}-${aClass.schedule}`, createdClass);
+    // Use unique identifier for mapping (code + schedule)
+    classMap.set(`${aClass.code}-${aClass.schedule}`, createdClass);
   }
 
   // Seed Students
@@ -107,9 +109,9 @@ async function main() {
         section: student.section,
         enrollments: {
           create: student.classes
-            .map(className => {
-              // Find the first class in the map that matches the name (since student data only has names)
-              const matchedKey = Array.from(classMap.keys()).find(key => key.startsWith(`${className}-`));
+            .map(classCode => {
+              // Find the first class in the map that matches the code
+              const matchedKey = Array.from(classMap.keys()).find(key => key.startsWith(`${classCode}-`));
               return matchedKey ? { classId: classMap.get(matchedKey)!.id } : null;
             })
             .filter((item): item is { classId: string } => item !== null),
@@ -123,7 +125,7 @@ async function main() {
       await prisma.facialData.create({
         data: {
           studentId: createdStudent.id,
-          embedding: JSON.stringify(Array.from({ length: 128 }, () => Math.random())),
+          embedding: JSON.stringify(Array.from({ length: 512 }, () => Math.random())),
         },
       });
     }

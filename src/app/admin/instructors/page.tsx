@@ -113,7 +113,7 @@ const ManageInstructorsPage = () => {
 
       <div>
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Instructor Management</h1>
-        <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">Faculty Directory & Access Control</p>
+        <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">Instructor Directory & Access Control</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -165,7 +165,7 @@ const ManageInstructorsPage = () => {
                         <div className="h-9 w-9 bg-black text-white rounded-lg flex items-center justify-center font-bold text-[10px] mr-4 shadow-sm group-hover:scale-105 transition-transform">
                           {inst.firstName[0]}{inst.lastName[0]}
                         </div>
-                        <span className="font-semibold text-gray-900 text-sm uppercase tracking-tight">{inst.firstName} {inst.lastName}</span>
+                        <span className="font-semibold text-gray-900 text-sm tracking-tight">{inst.firstName} {inst.lastName}</span>
                       </div>
                     </td>
                     <td className="px-8 py-5">

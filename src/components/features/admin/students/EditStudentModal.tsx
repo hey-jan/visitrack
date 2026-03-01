@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
+import ClassSelector from '@/components/features/shared/ClassSelector';
 
 interface EditStudentModalProps {
   isOpen: boolean;
@@ -18,35 +19,54 @@ interface Course {
 const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, student, onStudentUpdated }) => {
   const [formData, setFormData] = useState(student);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setFormData(student);
+    if (student) {
+      setFormData(student);
+      setSelectedClasses(student.enrollments?.map((e: any) => e.classId) || []);
+    }
     setError(null);
   }, [student, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      const fetchCourses = async () => {
+      const fetchData = async () => {
         try {
-          const res = await fetch('/api/courses');
-          const data = await res.json();
-          setCourses(data);
+          const [coursesRes, classesRes] = await Promise.all([
+            fetch('/api/courses'),
+            fetch('/api/classes')
+          ]);
+          const coursesData = await coursesRes.json();
+          const classesData = await classesRes.json();
+          setCourses(coursesData);
+          setClasses(classesData);
         } catch (error) {
-          console.error('Failed to fetch courses:', error);
+          console.error('Failed to fetch data:', error);
         }
       };
-      fetchCourses();
+      fetchData();
     }
   }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     });
     if (error) setError(null);
+  };
+
+  const handleClassToggle = (classId: string) => {
+    setSelectedClasses(prev => 
+      prev.includes(classId) 
+        ? prev.filter(id => id !== classId) 
+        : [...prev, classId]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +79,11 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...formData, year: parseInt(formData.year) }),
+        body: JSON.stringify({ 
+          ...formData, 
+          year: parseInt(formData.year.toString()),
+          classIds: selectedClasses
+        }),
       });
 
       const data = await response.json();
@@ -133,12 +157,13 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
               name="lastName"
               required
               placeholder="e.g. Doe"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/5 placeholder:text-gray-400 transition-all"
               value={formData?.lastName || ''}
               onChange={handleChange}
             />
           </div>
         </div>
+        
         <div className="flex flex-col gap-1 mb-4">
           <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Academic Program</label>
           <select
@@ -156,7 +181,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1">Year Level</label>
             <input
@@ -182,6 +208,17 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
               onChange={handleChange}
             />
           </div>
+        </div>
+
+        {/* Shared Class Enrollment Section */}
+        <div className="mb-6">
+          <label className="text-[10px] uppercase font-black text-black tracking-widest ml-1 block mb-2">Class Enrollment</label>
+          <ClassSelector 
+            classes={classes}
+            selectedIds={selectedClasses}
+            onToggle={handleClassToggle}
+            emptyMessage="No classes available"
+          />
         </div>
 
         {/* Status Toggle */}
@@ -216,9 +253,10 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
           </button>
           <button
             type="submit"
-            className="bg-black text-white px-10 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-xl shadow-black/10 active:scale-[0.98]"
+            disabled={isSubmitting}
+            className="bg-black text-white px-10 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-xl shadow-black/10 active:scale-[0.98] disabled:opacity-50"
           >
-            Update Record
+            {isSubmitting ? 'Updating...' : 'Update Record'}
           </button>
         </div>
       </form>

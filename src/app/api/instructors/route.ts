@@ -13,12 +13,14 @@ export async function GET() {
         class: {
           select: {
             id: true,
-            name: true,
+            code: true,
+            title: true,
             schedule: true
           }
         }
       }
     });
+
     return NextResponse.json(instructors);
   } catch (error) {
     console.error('Error fetching instructors:', error);

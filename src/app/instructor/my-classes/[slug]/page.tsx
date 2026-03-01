@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaArrowLeft, FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight, FaCamera } from 'react-icons/fa';
+import { FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight, FaCamera } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
+import BackButton from '@/components/features/shared/BackButton';
 
 interface ClassDetails {
   id: string;
-  name: string;
+  code: string;
   room: string;
   schedule: string;
   days: string;
@@ -92,7 +93,7 @@ const AttendancePage = () => {
           if (attendanceRes.ok) {
             const attendanceData = await attendanceRes.json();
             if (Array.isArray(attendanceData)) {
-              setAttendanceRecords(attendanceRecords => attendanceData);
+              setAttendanceRecords(attendanceData);
             }
           }
         } catch (error) {
@@ -151,7 +152,7 @@ const AttendancePage = () => {
         });
         const worksheet = XLSX.utils.json_to_sheet(studentAttendance);
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
-        XLSX.writeFile(workbook, `${classDetails.name}_${selectedStudentForExport}_Attendance.xlsx`);
+        XLSX.writeFile(workbook, `${classDetails.code}_${selectedStudentForExport}_Attendance.xlsx`);
       } else {
         const summaryRows = classDetails.students.map(student => {
           let present = 0;
@@ -165,7 +166,7 @@ const AttendancePage = () => {
         });
         const summaryWorksheet = XLSX.utils.json_to_sheet(summaryRows);
         XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
-        XLSX.writeFile(workbook, `${classDetails.name}_Attendance_Summary.xlsx`);
+        XLSX.writeFile(workbook, `${classDetails.code}_Attendance_Summary.xlsx`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -178,13 +179,8 @@ const AttendancePage = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <button 
-            onClick={() => router.push('/instructor/my-classes')}
-            className="flex items-center text-black hover:opacity-60 transition-all text-xs font-bold uppercase tracking-widest mb-4"
-          >
-            <FaArrowLeft className="mr-2" /> Back to Registry
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">{classDetails.name}</h1>
+          <BackButton variant="text" label="Back to Registry" href="/instructor/my-classes" />
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">{classDetails.code}</h1>
           <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider flex items-center">
             {viewMode === 'logs' ? 'Attendance Archive & Export' : 'Class Roster & Directory'}
           </p>
