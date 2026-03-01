@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FaCamera, FaUserCheck, FaStop, FaPlay, FaCheckCircle } from 'react-icons/fa';
 import Webcam from 'react-webcam';
+import BackButton from '@/components/features/shared/BackButton';
 
 interface Student {
   id: string;

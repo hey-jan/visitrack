@@ -81,7 +81,7 @@ export const classes = [
     title: 'Lean Startup Methodology',
     room: 'Rm 402',
     schedule: '11973',
-    days: 'M-S',
+    days: 'M-SUN',
     time: '24/7',
     units: 3,
     students: 8,

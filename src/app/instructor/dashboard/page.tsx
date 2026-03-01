@@ -30,7 +30,7 @@ const DashboardPage = () => {
           // Special case for testing: "CS-FRELEAN" always shows up
           if (c.code.includes('CS-FRELEAN')) return true;
           
-          if (c.days === 'DAILY' || c.days === '24/7') return true;
+          if (c.days === 'DAILY' || c.days === '24/7' || c.days === 'M-SUN') return true;
           
           // Handle range like "M-S" (Monday to Saturday)
           if (c.days === 'M-S' && dayAbbreviation !== 'SUN') return true;
