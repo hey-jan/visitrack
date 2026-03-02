@@ -34,11 +34,14 @@ export async function GET(
       select: {
         date: true,
       },
-      orderBy: {
-        date: 'desc',
-      },
     });
-    return NextResponse.json(sessions.map((s) => s.date));
+
+    // Sort dates manually since they are strings like "Jan 01, 2026"
+    const sortedDates = sessions
+      .map((s) => s.date)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+    return NextResponse.json(sortedDates);
   } catch (error) {
     console.error('Error fetching attendance dates:', error);
     return NextResponse.json(

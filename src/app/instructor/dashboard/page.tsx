@@ -6,7 +6,9 @@ import { FaCalendarAlt, FaClock, FaExclamationTriangle, FaArrowRight } from 'rea
 const DashboardPage = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [todaysClasses, setTodaysClasses] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [instructor, setInstructor] = useState<any>(null);
 
   useEffect(() => {
@@ -21,31 +23,32 @@ const DashboardPage = () => {
         const instructorData = await meRes.json();
         setInstructor(instructorData);
 
+        // Fetch Today's Classes
         const classesRes = await fetch(`/api/classes?instructorId=${instructorData.id}`);
-        if (!classesRes.ok) throw new Error('Failed to fetch classes');
-        const allInstructorClasses = await classesRes.json();
+        if (classesRes.ok) {
+          const allInstructorClasses = await classesRes.json();
+          const dayAbbreviation = getDayAbbreviation(today.getDay());
+          const filteredClasses = allInstructorClasses.filter((c: any) => {
+            if (c.code.includes('CS-FRELEAN')) return true;
+            if (c.days === 'DAILY' || c.days === '24/7' || c.days === 'M-SUN') return true;
+            if (c.days === 'M-S' && dayAbbreviation !== 'SUN') return true;
+            if (dayAbbreviation === 'T') return c.days.replace(/TH/g, '').includes('T');
+            return c.days.includes(dayAbbreviation);
+          });
+          setTodaysClasses(filteredClasses);
+        }
 
-        const dayAbbreviation = getDayAbbreviation(today.getDay());
-        const filteredClasses = allInstructorClasses.filter((c: any) => {
-          // Special case for testing: "CS-FRELEAN" always shows up
-          if (c.code.includes('CS-FRELEAN')) return true;
-          
-          if (c.days === 'DAILY' || c.days === '24/7' || c.days === 'M-SUN') return true;
-          
-          // Handle range like "M-S" (Monday to Saturday)
-          if (c.days === 'M-S' && dayAbbreviation !== 'SUN') return true;
-          
-          if (dayAbbreviation === 'T') {
-            return c.days.replace(/TH/g, '').includes('T');
-          }
-          return c.days.includes(dayAbbreviation);
-        });
-
-        setTodaysClasses(filteredClasses);
+        // Fetch Attendance Alerts
+        const alertsRes = await fetch(`/api/attendance/alerts?instructorId=${instructorData.id}`);
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          setAlerts(alertsData);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
+        setLoadingAlerts(false);
       }
     };
 
@@ -58,13 +61,6 @@ const DashboardPage = () => {
     };
     return mapping[dayIndex] || '';
   };
-
-  const absentStudents = [
-    { name: 'Pedro Reyes', absences: 4, subjects: 'CS-PRACT41' },
-    { name: 'Miguel Ramos', absences: 4, subjects: 'CS-PRACT41' },
-    { name: 'Olivia Gomez', absences: 4, subjects: 'CS-FRELEAN' },
-    { name: 'Diego Martinez', absences: 3, subjects: 'CS-FRELEAN' },
-  ];
 
   return (
     <div className="space-y-8">
@@ -94,7 +90,11 @@ const DashboardPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {todaysClasses.length > 0 ? (
+            {loading ? (
+               <div className="col-span-full py-16 flex justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+               </div>
+            ) : todaysClasses.length > 0 ? (
               todaysClasses.map((course, index) => (
                 <div key={index} className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm hover:border-black transition-all flex flex-col group">
                   <div className="mb-6">
@@ -128,22 +128,31 @@ const DashboardPage = () => {
           </h2>
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="divide-y divide-gray-50">
-              {absentStudents.map((student, index) => (
-                <div key={index} className="p-5 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="font-bold text-gray-900 text-sm">{student.name}</p>
-                    <span className="bg-red-50 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Critical</span>
+              {loadingAlerts ? (
+                <div className="p-10 text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">Loading alerts...</div>
+              ) : alerts.length > 0 ? (
+                alerts.map((student, index) => (
+                  <div key={index} className="p-5 hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="font-bold text-gray-900 text-sm uppercase tracking-tight">{student.name}</p>
+                      <span className="bg-red-50 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Critical</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      <span className="font-bold text-black">{student.absences} Absences</span> in {student.subjects}
+                    </p>
                   </div>
-                  <p className="text-[10px] text-gray-500 font-medium">
-                    <span className="font-bold text-black">{student.absences} Absences</span> in {student.subjects}
-                  </p>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="p-10 text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">No critical alerts found</div>
+              )}
             </div>
             <div className="p-4 bg-gray-50 text-center border-t border-gray-100">
-              <button className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black transition-colors">
+              <Link 
+                href="/instructor/my-classes"
+                className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:bg-black hover:text-white py-3 rounded-xl transition-all inline-block w-full"
+              >
                 View All Records
-              </button>
+              </Link>
             </div>
           </div>
         </div>

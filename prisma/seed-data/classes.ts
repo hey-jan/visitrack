@@ -77,7 +77,7 @@ export const classes = [
     instructorEmail: 'maria.santos@example.com',
   },
   {
-    code: 'FRELEAN',
+    code: 'CS-FRELEAN',
     title: 'Lean Startup Methodology',
     room: 'Rm 402',
     schedule: '11973',

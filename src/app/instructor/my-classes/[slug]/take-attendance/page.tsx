@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaCamera, FaUserCheck, FaStop, FaPlay, FaCheckCircle } from 'react-icons/fa';
+import { FaCamera, FaUserCheck, FaStop, FaPlay, FaCheckCircle, FaMapMarkerAlt, FaCalendarAlt, FaClock } from 'react-icons/fa';
 import Webcam from 'react-webcam';
 import BackButton from '@/components/features/shared/BackButton';
 
@@ -16,6 +16,8 @@ interface Student {
 interface ClassDetails {
   id: string;
   code: string;
+  days: string;
+  time: string;
   students: Student[];
 }
 
@@ -30,17 +32,36 @@ const TakeAttendancePage = () => {
   const [detectedStudents, setDetectedStudents] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [recognitionResults, setRecognitionResults] = useState<any[]>([]);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number; address?: string } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const reverseGeocode = async (lat: number, lon: number) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.display_name;
+      }
+    } catch (error) {
+      console.error("Reverse geocoding failed:", error);
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchClassAndStatus = async () => {
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric',
+        });
         const [classRes, attendanceRes] = await Promise.all([
           fetch(`/api/classes/${slug}`),
-          fetch(`/api/attendance/${slug}?date=${today}`)
+          fetch(`/api/attendance/${slug}?date=${encodeURIComponent(today)}`)
         ]);
 
         if (classRes.ok) {
@@ -53,9 +74,21 @@ const TakeAttendancePage = () => {
           if (existingAttendance && existingAttendance.length > 0) {
             setIsAlreadyCompleted(true);
             const presentIds = existingAttendance
-              .filter((rec: any) => rec.status === 'Present')
+              .filter((rec: any) => rec.status === 'Present' || rec.status === 'Late')
               .map((rec: any) => rec.student.id);
             setDetectedStudents(new Set(presentIds));
+            
+            // If session exists, it might have location data
+            if (existingAttendance[0].session) {
+              const sess = existingAttendance[0].session;
+              if (sess.latitude && sess.longitude) {
+                setLocation({ 
+                  latitude: sess.latitude, 
+                  longitude: sess.longitude,
+                  address: sess.address 
+                });
+              }
+            }
           }
         }
       } catch (error) {
@@ -160,6 +193,30 @@ const TakeAttendancePage = () => {
     if (isAlreadyCompleted) return;
 
     if (!isSessionActive) {
+      // Get location when starting session
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const address = await reverseGeocode(lat, lon);
+            
+            setLocation({
+              latitude: lat,
+              longitude: lon,
+              address: address || undefined
+            });
+            setLocationError(null);
+          },
+          (error) => {
+            console.error("Error getting location:", error);
+            setLocationError("Location access denied or unavailable.");
+          }
+        );
+      } else {
+        setLocationError("Geolocation is not supported by your browser.");
+      }
+
       try {
         await fetch('http://localhost:8001/sync', { method: 'POST' });
       } catch (error) {
@@ -175,7 +232,12 @@ const TakeAttendancePage = () => {
     setIsSessionActive(false);
     setRecognitionResults([]);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    });
+    
     const attendanceRecords = classDetails.students.map(student => ({
       studentId: student.id,
       status: detectedStudents.has(student.id) ? 'Present' : 'Absent',
@@ -187,7 +249,12 @@ const TakeAttendancePage = () => {
       const res = await fetch(`/api/attendance/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attendanceRecords),
+        body: JSON.stringify({
+          records: attendanceRecords,
+          latitude: location?.latitude,
+          longitude: location?.longitude,
+          address: location?.address
+        }),
       });
 
       if (res.ok) {
@@ -205,10 +272,34 @@ const TakeAttendancePage = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-4">
           <BackButton variant="text" label="Back" />
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Attendance Session</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">{classDetails.code}</p>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">Attendance Session</h1>
+            {location && (
+              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                <FaMapMarkerAlt size={10} /> {location.address ? 'Location Verified' : 'Location Captured'}
+              </div>
+            )}
+            {locationError && (
+              <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
+                <FaMapMarkerAlt size={10} /> {locationError}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-black text-white bg-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-sm">
+              {classDetails.code}
+            </span>
+            <div className="h-4 w-px bg-gray-200 mx-1"></div>
+            <div className="flex items-center gap-2 bg-gray-50 text-black px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-gray-100">
+              <FaCalendarAlt size={10} /> {classDetails.days}
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 text-black px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-gray-100">
+              <FaClock size={10} /> {classDetails.time}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-4">
@@ -238,12 +329,23 @@ const TakeAttendancePage = () => {
         <div className="lg:col-span-2">
           <div className="relative aspect-video bg-gray-100 rounded-3xl border-4 border-white shadow-2xl overflow-hidden group">
             {isAlreadyCompleted ? (
-              <div className="flex flex-col items-center justify-center h-full bg-green-50/30">
+              <div className="flex flex-col items-center justify-center h-full bg-green-50/30 p-10 text-center">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
                   <FaCheckCircle size={40} className="text-green-600" />
                 </div>
                 <p className="text-sm font-black text-green-800 uppercase tracking-[0.2em]">Attendance Recorded</p>
-                <p className="text-[10px] text-green-600 mt-2 font-bold uppercase">Class: {classDetails.code} • {new Date().toLocaleDateString()}</p>
+                <p className="text-[10px] text-green-600 mt-2 font-bold uppercase mb-4">Class: {classDetails.code} • {new Date().toLocaleDateString()}</p>
+                
+                {location && (
+                  <div className="bg-white/50 backdrop-blur-sm border border-green-100 rounded-2xl p-4 max-w-md">
+                    <p className="text-[10px] text-green-800 font-black uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
+                      <FaMapMarkerAlt size={10} /> Verified Location
+                    </p>
+                    <p className="text-xs font-bold text-gray-600 leading-relaxed">
+                      {location.address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : isSessionActive ? (
               <>
@@ -309,6 +411,13 @@ const TakeAttendancePage = () => {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #eee; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #000; }
+      `}</style>
     </div>
   );
 };

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight, FaCamera } from 'react-icons/fa';
+import { FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight, FaCamera, FaInfoCircle } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import BackButton from '@/components/features/shared/BackButton';
 
@@ -39,6 +39,9 @@ interface AttendanceRecord {
   student: Student;
   session: {
     date: string;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
   };
 }
 
@@ -53,7 +56,6 @@ const AttendancePage = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentForExport, setSelectedStudentForExport] = useState('All');
-  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [viewMode, setViewMode] = useState<'logs' | 'roster'>('logs');
@@ -106,6 +108,68 @@ const AttendancePage = () => {
     }
   }, [slug, selectedDate, viewMode]);
 
+  const scheduleStatus = useMemo(() => {
+    if (!classDetails) return { isAvailable: false, reason: 'Loading class details...' };
+
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    });
+
+    // 1. Check if session already exists for today
+    if (availableDates.includes(todayStr)) {
+      return { isAvailable: false, reason: 'Attendance already recorded for today.' };
+    }
+
+    // 2. Check Day
+    const dayNames = ['SUN', 'M', 'T', 'W', 'TH', 'F', 'S'];
+    const currentDay = dayNames[now.getDay()];
+    
+    // M-SUN means every day
+    const isEveryDay = classDetails.days === 'M-SUN';
+    const scheduledDays = classDetails.days === 'TTH' ? ['T', 'TH'] : 
+                         classDetails.days === 'MWF' ? ['M', 'W', 'F'] : 
+                         [classDetails.days];
+
+    const isCorrectDay = isEveryDay || scheduledDays.includes(currentDay);
+    if (!isCorrectDay) {
+      return { isAvailable: false, reason: `Not scheduled for today (${classDetails.days}).` };
+    }
+
+    // 3. Check Time (if not M-SUN)
+    if (!isEveryDay) {
+      try {
+        const [startTimeStr, endTimeStr] = classDetails.time.split(' - ');
+        
+        const parseTime = (timeStr: string) => {
+          const [time, modifier] = timeStr.split(' ');
+          let [hours, minutes] = time.split(':').map(Number);
+          if (modifier === 'PM' && hours < 12) hours += 12;
+          if (modifier === 'AM' && hours === 12) hours = 0;
+          const d = new Date(now);
+          d.setHours(hours, minutes, 0, 0);
+          return d;
+        };
+
+        const startTime = parseTime(startTimeStr);
+        const endTime = parseTime(endTimeStr);
+
+        if (now < startTime) {
+          return { isAvailable: false, reason: `Class hasn't started yet (Scheduled: ${classDetails.time}).` };
+        }
+        if (now > endTime) {
+          return { isAvailable: false, reason: `Class has already ended (Scheduled: ${classDetails.time}).` };
+        }
+      } catch (e) {
+        console.error('Error parsing time:', e);
+      }
+    }
+
+    return { isAvailable: true, reason: '' };
+  }, [classDetails, availableDates]);
+
   if (!classDetails) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -127,6 +191,8 @@ const AttendancePage = () => {
   const presentCount = attendanceRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
   const absentCount = attendanceRecords.filter(r => r.status === 'Absent').length;
   const lateCount = attendanceRecords.filter(r => r.status === 'Late').length;
+
+  const currentSessionLocation = attendanceRecords[0]?.session;
 
   const handleExportExcel = async () => {
     if (!classDetails || !classDetails.students) return;
@@ -187,12 +253,27 @@ const AttendancePage = () => {
         </div>
         
         <div className="flex flex-wrap gap-3">
-          <Link
-            href={`/instructor/my-classes/${slug}/take-attendance`}
-            className="bg-black text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-gray-800 transition-all font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-gray-200"
-          >
-            <FaCamera size={12} /> Take Attendance
-          </Link>
+          {scheduleStatus.isAvailable ? (
+            <Link
+              href={`/instructor/my-classes/${slug}/take-attendance`}
+              className="bg-black text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-gray-800 transition-all font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-gray-200"
+            >
+              <FaCamera size={12} /> Take Attendance
+            </Link>
+          ) : (
+            <div className="relative group">
+              <button
+                disabled
+                className="bg-gray-100 text-gray-400 px-5 py-2.5 rounded-xl flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest cursor-not-allowed border border-gray-200"
+              >
+                <FaCamera size={12} /> Take Attendance
+              </button>
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block w-48 bg-gray-900 text-white text-[9px] p-2 rounded-lg shadow-xl z-50 text-center font-bold uppercase tracking-wider">
+                <FaInfoCircle className="inline mr-1 mb-0.5" />
+                {scheduleStatus.reason}
+              </div>
+            </div>
+          )}
           <button
             onClick={() => console.log('Export PDF')}
             className="bg-white border border-gray-200 text-black px-5 py-2.5 rounded-xl flex items-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
@@ -305,10 +386,20 @@ const AttendancePage = () => {
 
             {/* Attendance Records Table */}
             <div className="lg:col-span-3 space-y-4">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1">
-                <h2 className="text-xs font-bold text-black uppercase tracking-widest flex items-center">
-                  Logs for <span className="ml-2 text-gray-400">{selectedDate || 'Select a date'}</span>
-                </h2>
+              <div className="flex flex-col items-start gap-4 px-1">
+                <div className="w-full space-y-2">
+                  <h2 className="text-xs font-bold text-black uppercase tracking-widest flex items-center">
+                    Logs for <span className="ml-2 text-gray-400">{selectedDate || 'Select a date'}</span>
+                  </h2>
+                  {selectedDate && currentSessionLocation?.latitude && (
+                    <div className="flex items-start gap-2 bg-gray-50 text-gray-500 px-3 py-2 rounded-xl border border-gray-100 text-[9px] font-bold uppercase tracking-widest shadow-sm w-full">
+                      <FaMapMarkerAlt size={10} className="text-black/30 mt-0.5 flex-shrink-0" />
+                      <span className="leading-relaxed">
+                        {currentSessionLocation.address || `GPS: ${currentSessionLocation.latitude.toFixed(4)}, ${currentSessionLocation.longitude?.toFixed(4)}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="relative w-full md:w-72">
                   <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-black opacity-20" size={12} />
                   <input

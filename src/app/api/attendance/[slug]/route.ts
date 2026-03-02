@@ -67,7 +67,7 @@ export async function POST(
     if (!resolvedId) {
         return NextResponse.json({ error: 'Class not found' }, { status: 404 });
     }
-    const records = await request.json();
+    const { records, latitude, longitude, address } = await request.json();
 
     if (!records || records.length === 0) {
       return NextResponse.json({ error: 'No records provided' }, { status: 400 });
@@ -90,11 +90,14 @@ export async function POST(
       return NextResponse.json({ error: 'Attendance for this session has already been recorded.' }, { status: 400 });
     }
 
-    // Create a new session
+    // Create a new session with location data
     const session = await prisma.session.create({
       data: {
         classId: resolvedId,
         date,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        address: address || null,
       },
     });
 

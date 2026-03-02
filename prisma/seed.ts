@@ -6,7 +6,6 @@ import { courses as coursesData } from './seed-data/courses.ts';
 import { classes as classesData } from './seed-data/classes.ts';
 import { instructors as instructorsData } from './seed-data/instructor.ts';
 import { admins as adminsData } from './seed-data/admin.ts';
-import { attendanceData } from './seed-data/attendanceData.ts';
 
 const prisma = new PrismaClient();
 
@@ -23,6 +22,19 @@ interface StudentData {
 
 async function main() {
   console.log('Start seeding ...');
+
+  // Clear existing data
+  console.log('Clearing existing data...');
+  await prisma.attendance.deleteMany({});
+  await prisma.session.deleteMany({});
+  await prisma.enrollment.deleteMany({});
+  await prisma.facialData.deleteMany({});
+  await prisma.student.deleteMany({});
+  await prisma.class.deleteMany({});
+  await prisma.instructor.deleteMany({});
+  await prisma.course.deleteMany({});
+  await prisma.admin.deleteMany({});
+  await prisma.systemSettings.deleteMany({});
 
   // Seed Admins
   for (const admin of adminsData) {
@@ -131,31 +143,73 @@ async function main() {
     }
   }
 
-  // Seed Attendance Data for CS-PRACT41
-  const csPract41Key = Array.from(classMap.keys()).find(key => key.startsWith('CS-PRACT41-'));
-  const csPract41Class = csPract41Key ? classMap.get(csPract41Key) : null;
+  // Seed Attendance Data for ELDNET1
+  const eldnet1Key = Array.from(classMap.keys()).find(key => key.startsWith('ELDNET1-'));
+  const eldnet1Class = eldnet1Key ? classMap.get(eldnet1Key) : null;
   
-  if (csPract41Class) {
-    for (const [date, records] of Object.entries(attendanceData)) {
-      // Create session first
-      const session = await prisma.session.create({
-        data: {
-          date: date,
-          classId: csPract41Class.id,
-        }
-      });
+  if (eldnet1Class) {
+    const startDate = new Date('2026-01-01');
+    const endDate = new Date('2026-03-02');
+    
+    let sessionCount = 0;
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      // 2 is Tuesday, 4 is Thursday
+      if (day === 2 || day === 4) {
+        sessionCount++;
+        const dateString = d.toLocaleDateString('en-US', {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric',
+        });
+        
+        // Create session with sample location data
+        const session = await prisma.session.create({
+          data: {
+            date: dateString,
+            classId: eldnet1Class.id,
+            latitude: 14.5995 + (Math.random() * 0.001 - 0.0005),
+            longitude: 120.9842 + (Math.random() * 0.001 - 0.0005),
+            address: dateString.includes('Feb 26') 
+              ? "Advanced Research and Development Wing, Computer Engineering Department, 4th Floor, Innovation Building, North Campus Science and Technology Park, Quezon City, Metro Manila, Philippines, 1101"
+              : "Main Computer Laboratory, Building A",
+          }
+        });
 
-      for (const record of records) {
-        const student = studentMap.get(`${record.firstName} ${record.lastName}`);
-        if (student) {
-          await prisma.attendance.create({
-            data: {
-              status: record.status,
-              time: record.time,
-              studentId: student.id,
-              sessionId: session.id,
-            },
-          });
+        // Add attendance for all students enrolled in this class
+        const enrolledStudents = (studentsData as StudentData[]).filter(s => s.classes.includes('ELDNET1'));
+        for (const studentData of enrolledStudents) {
+          const student = studentMap.get(`${studentData.firstName} ${studentData.lastName}`);
+          if (student) {
+            // Randomly assign status
+            const rand = Math.random();
+            let status = 'Present';
+            let time = '09:00 AM';
+            
+            // Special Case: Pedro Reyes should have 9 absences
+            // Out of 17 sessions, if sessionCount <= 9, make him absent
+            if (studentData.firstName === 'Pedro' && studentData.lastName === 'Reyes' && sessionCount <= 9) {
+              status = 'Absent';
+              time = '-';
+            } else if (rand > 0.95) {
+              status = 'Absent';
+              time = '-';
+            } else if (rand > 0.8) {
+              status = 'Late';
+              time = `09:${Math.floor(Math.random() * 15) + 16} AM`;
+            } else {
+              time = `09:0${Math.floor(Math.random() * 9)} AM`;
+            }
+
+            await prisma.attendance.create({
+              data: {
+                status: status,
+                time: time,
+                studentId: student.id,
+                sessionId: session.id,
+              },
+            });
+          }
         }
       }
     }

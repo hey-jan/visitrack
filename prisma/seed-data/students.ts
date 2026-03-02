@@ -8,7 +8,7 @@ export const students = [
     course: 'BSCS',
     year: 3,
     section: 'A',
-    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41'],
+    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41', 'ELDNET1', 'CS-FRELEAN'],
   },
   {
     studentNumber: '22655002',
@@ -18,7 +18,7 @@ export const students = [
     course: 'BSCS',
     year: 3,
     section: 'A',
-    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41'],
+    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41', 'ELDNET1', 'CS-FRELEAN'],
   },
   {
     studentNumber: '22655003',
@@ -28,7 +28,7 @@ export const students = [
     course: 'BSCS',
     year: 3,
     section: 'A',
-    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41'],
+    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41', 'ELDNET1', 'CS-FRELEAN'],
   },
   // BSCS - Section B
   {
@@ -39,7 +39,7 @@ export const students = [
     course: 'BSCS',
     year: 3,
     section: 'B',
-    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41'],
+    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41', 'ELDNET1', 'CS-FRELEAN'],
   },
   {
     studentNumber: '22655005',
@@ -49,7 +49,7 @@ export const students = [
     course: 'BSCS',
     year: 3,
     section: 'B',
-    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41'],
+    classes: ['CS-PRACT41', 'CS-THESIS41', 'CS-OPSYS41', 'ELDNET1', 'CS-FRELEAN'],
   },
   // BSIT - Section A
   {
@@ -60,7 +60,7 @@ export const students = [
     course: 'BSIT',
     year: 2,
     section: 'A',
-    classes: ['CS-FRELEAN', 'CC-COMPROG11'],
+    classes: ['CS-FRELEAN', 'CC-COMPROG11', 'ELDNET1'],
   },
   {
     studentNumber: '22655007',
@@ -70,7 +70,7 @@ export const students = [
     course: 'BSIT',
     year: 2,
     section: 'A',
-    classes: ['CS-FRELEAN', 'CC-COMPROG11'],
+    classes: ['CS-FRELEAN', 'CC-COMPROG11', 'ELDNET1'],
   },
   // Irregular Students (Mixed Section/Classes)
   {
@@ -81,7 +81,7 @@ export const students = [
     course: 'BSCS',
     year: 3,
     section: 'IRR',
-    classes: ['CS-PRACT41', 'CC-COMPROG11'],
+    classes: ['CS-PRACT41', 'CC-COMPROG11', 'ELDNET1'],
   },
   {
     studentNumber: '22655009',
@@ -91,7 +91,7 @@ export const students = [
     course: 'BSIT',
     year: 4,
     section: 'IRR',
-    classes: ['CS-PRACT41', 'CS-THESIS41'],
+    classes: ['CS-PRACT41', 'CS-THESIS41', 'ELDNET1'],
   },
   {
     studentNumber: '22655010',
@@ -101,6 +101,6 @@ export const students = [
     course: 'BSHM',
     year: 1,
     section: 'A',
-    classes: ['CC-COMPROG11'],
+    classes: ['CC-COMPROG11', 'ELDNET1'],
   }
 ];
