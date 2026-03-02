@@ -18,7 +18,7 @@ This document outlines the core technologies and architectural choices powering 
 - **Local File Storage**: Custom storage logic for handling facial snapshots and profile images (located in `public/uploads/`).
 
 ## 4. Facial Recognition Service
-- **[InsightFace](https://github.com/deepinsight/insightface)**: A high-performance Python-based service (located in `face_recognition2/`) that handles face detection and embedding generation.
+- **[InsightFace](https://github.com/deepinsight/insightface)**: A high-performance Python-based service (located in `face-recognition/`) that handles face detection and embedding generation.
 - **ONNX Runtime**: Utilized for efficient model inference (Buffalo_L model) within the Python backend.
 - **FastAPI / Flask (Internal)**: Typically used to expose the facial recognition logic as an internal API endpoint.
 

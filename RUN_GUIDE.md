@@ -30,7 +30,7 @@ The Python service handles the actual "brain" work of identifying faces.
 1.  **Open a NEW terminal** (don't close the first one).
 2.  **Navigate to the face recognition directory**:
     ```powershell
-    cd face_recognition2
+    cd face-recognition
     ```
 3.  **Activate the Virtual Environment (`.venv`)**:
     The `.venv` folder contains the specific Python libraries (like `insightface` and `opencv`) needed for this project.
@@ -66,6 +66,6 @@ To stop either the Next.js frontend or the Python face recognition service:
 If you were running a script that opened a webcam window (like `face_recognition.py`), you can also press the **'q'** key while that window is in focus to close it.
 
 
--   **Database Error**: If the Python service says "Database not found," ensure you are running it from the `face_recognition2` directory.
+-   **Database Error**: If the Python service says "Database not found," ensure you are running it from the `face-recognition` directory.
 -   **Port Conflict**: If port 8001 is busy, ensure you don't have another instance of `app.py` running.
 -   **Camera Not Loading**: Ensure no other application (like Zoom or Teams) is using your webcam.

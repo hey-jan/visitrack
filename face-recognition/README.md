@@ -7,7 +7,7 @@ The system is designed to be self-contained and deployment-ready, with bundled m
 ## Directory Structure
 
 ```
-C:\face_recognition2
+C:\face-recognition
 ├─── .venv\              # Directory for the Python virtual environment
 ├─── known_faces\        # Directory to store images of known individuals
 │    └─── [Person_Name]\ # Each subdirectory is named after a person
@@ -46,7 +46,7 @@ Follow these steps to set up and run the project.
 
 It is highly recommended to use a Python virtual environment to manage project dependencies and avoid conflicts with other Python projects.
 
-From the project's root directory (`C:\face_recognition2`), run the following command to create a virtual environment named `.venv`:
+From the project's root directory (`C:\face-recognition`), run the following command to create a virtual environment named `.venv`:
 
 ```sh
 python -m venv .venv
@@ -59,7 +59,7 @@ The required Python libraries are listed in the script's imports. Install them u
 **Important**: Make sure you are using the Python interpreter from your virtual environment.
 
 ```sh
-C:\face_recognition2\.venv\Scripts\python.exe -m pip install opencv-python numpy insightface onnxruntime
+C:\face-recognition\.venv\Scripts\python.exe -m pip install opencv-python numpy insightface onnxruntime
 ```
 
 ### 4. Add Known Faces
@@ -72,10 +72,10 @@ To enable the system to recognize people, you must add their pictures to the `kn
 
 ## How to Run the Application
 
-Once the setup is complete, you can run the face recognition system with the following command from the project's root directory (`C:\face_recognition2`):
+Once the setup is complete, you can run the face recognition system with the following command from the project's root directory (`C:\face-recognition`):
 
 ```sh
-C:\face_recognition2\.venv\Scripts\python.exe face_recognition.py
+C:\face-recognition\.venv\Scripts\python.exe face_recognition.py
 ```
 
 A window titled "Face Recognition" will appear, showing your webcam feed with faces being identified in real time.

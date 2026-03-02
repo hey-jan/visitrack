@@ -393,7 +393,7 @@ const AttendancePage = () => {
                   </h2>
                   {selectedDate && currentSessionLocation?.latitude && (
                     <div className="flex items-start gap-2 bg-gray-50 text-gray-500 px-3 py-2 rounded-xl border border-gray-100 text-[9px] font-bold uppercase tracking-widest shadow-sm w-full">
-                      <FaMapMarkerAlt size={10} className="text-black/30 mt-0.5 flex-shrink-0" />
+                      <FaMapMarkerAlt size={10} className="text-black/30 mt-0.5 shrink-0" />
                       <span className="leading-relaxed">
                         {currentSessionLocation.address || `GPS: ${currentSessionLocation.latitude.toFixed(4)}, ${currentSessionLocation.longitude?.toFixed(4)}`}
                       </span>

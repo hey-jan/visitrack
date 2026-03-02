@@ -42,6 +42,7 @@ next-env.d.ts
 
 /src/generated/prisma
 
-/face_recognition2/.venv/
+/face-recognition/.venv/
+/face-recognition/embeddings_cache.pkl
 prisma/dev.db
 *.pkl
