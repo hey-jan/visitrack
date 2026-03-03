@@ -8,12 +8,12 @@ datasource db {
 }
 
 model SystemSettings {
-  id                String   @id @default("global")
-  lateThreshold     Int      @default(15)
-  absentThreshold   Int      @default(30)
-  autoMarkAbsent    Boolean  @default(true)
-  confidenceScore   Float    @default(0.80)
-  updatedAt         DateTime @updatedAt
+  id              String   @id @default("global")
+  lateThreshold   Int      @default(15)
+  absentThreshold Int      @default(30)
+  autoMarkAbsent  Boolean  @default(true)
+  confidenceScore Float    @default(0.80)
+  updatedAt       DateTime @updatedAt
 }
 
 model Student {
@@ -99,10 +99,10 @@ model Class {
 model Enrollment {
   studentId  String
   classId    String
-  status     String   @default("ENROLLED") // ENROLLED, DROPPED
+  status     String   @default("ENROLLED")
   enrolledAt DateTime @default(now())
-  class      Class    @relation(fields: [classId], references: [id])
   student    Student  @relation(fields: [studentId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
 
   @@id([studentId, classId])
 }
@@ -132,6 +132,6 @@ model Attendance {
   sessionId   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  session     Session  @relation(fields: [sessionId], references: [id])
   student     Student  @relation(fields: [studentId], references: [id])
+  session     Session  @relation(fields: [sessionId], references: [id])
 }

@@ -230,18 +230,18 @@ const AttendancePage = () => {
       };
 
       const genDate = new Date().toLocaleString();
-
-      const createMetadataHeader = (reportTitle: string, studentName?: string) => {
-        return [
-          ['VISITRACK ATTENDANCE MANAGEMENT SYSTEM'],
-          [reportTitle.toUpperCase()],
-          [],
-          ['CLASS CODE:', classDetails.code, '', 'INSTRUCTOR:', `${classDetails.teacher.firstName} ${classDetails.teacher.lastName}`],
-          ['PERIOD:', getPeriodString(), '', 'GENERATED:', genDate],
-          studentName ? ['STUDENT:', studentName.toUpperCase()] : [],
-          [],
-        ];
-      };
+const createMetadataHeader = (reportTitle: string, studentName?: string) => {
+  return [
+    ['VISITRACK ATTENDANCE MANAGEMENT SYSTEM'],
+    [reportTitle.toUpperCase()],
+    [],
+    ['CLASS CODE:', classDetails.code, '', 'INSTRUCTOR:', `${classDetails.teacher.firstName} ${classDetails.teacher.lastName}`],
+    ['PERIOD:', getPeriodString(), '', 'GENERATED:', genDate],
+    ['SCHEDULE ID:', classDetails.schedule],
+    ...(studentName ? [['STUDENT:', studentName.toUpperCase()]] : []),
+    [],
+  ];
+};
 
       const groupByMonth = (dates: string[]) => {
         return dates.reduce((acc, date) => {
@@ -368,11 +368,11 @@ const AttendancePage = () => {
         // --- Document Title ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
-        doc.setTextColor(15, 23, 42); // Slate-900
-        doc.text(title.toUpperCase(), 14, 22);
+        doc.setTextColor(0, 0, 0); // All black
+        doc.text(title.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
         
         // Subtle divider line
-        doc.setDrawColor(226, 232, 240); // Slate-200
+        doc.setDrawColor(0, 0, 0); // All black
         doc.setLineWidth(0.5);
         doc.line(14, 25, pageWidth - 14, 25);
 
@@ -383,10 +383,10 @@ const AttendancePage = () => {
         
         const drawMeta = (label: string, value: string, x: number, y: number) => {
           doc.setFont('helvetica', 'bold');
-          doc.setTextColor(100, 116, 139); // Slate-500
+          doc.setTextColor(0, 0, 0); // All black
           doc.text(label, x, y);
           doc.setFont('helvetica', 'normal');
-          doc.setTextColor(15, 23, 42); // Slate-900
+          doc.setTextColor(0, 0, 0); // All black
           doc.text(value.toUpperCase(), x + 24, y);
         };
 
@@ -399,20 +399,21 @@ const AttendancePage = () => {
         drawMeta('INSTRUCTOR:', `${classDetails.teacher.firstName} ${classDetails.teacher.lastName}`, midX, 34);
         drawMeta('PERIOD:', getPeriodString(monthOverride), leftX, 40);
         drawMeta('GENERATED:', genDate, midX, 40);
+        drawMeta('SCHEDULE ID:', classDetails.schedule, leftX, 46);
 
         if (studentName) {
-          drawMeta('STUDENT:', studentName, leftX, 46);
+          drawMeta('STUDENT:', studentName, midX, 46);
         }
 
         // Professional Footer
         doc.setFontSize(7);
-        doc.setTextColor(148, 163, 184); // Slate-400
-        doc.setDrawColor(226, 232, 240); // Slate-200
+        doc.setTextColor(0, 0, 0); // All black
+        doc.setDrawColor(0, 0, 0); // All black
         doc.line(14, pageHeight - 15, pageWidth - 14, pageHeight - 15);
-        doc.text('VISITRACK | SYSTEM-GENERATED REGISTRY REPORT | CONFIDENTIAL', 14, pageHeight - 10);
+        doc.text('VISITRACK', 14, pageHeight - 10);
         const pageInfo = `PAGE ${doc.getNumberOfPages()}`;
         doc.text(pageInfo, pageWidth - 14, pageHeight - 10, { align: 'right' });
-        doc.setTextColor(0);
+        doc.setTextColor(0, 0, 0);
       };
 
       const groupByMonth = (dates: string[]) => {
@@ -453,19 +454,19 @@ const AttendancePage = () => {
           }
 
           autoTable(doc, {
-            startY: 55,
-            margin: { top: 55 },
+            startY: 62,
+            margin: { top: 62 },
             head: [['MONTH', 'PRESENT', 'ABSENT', 'SESSIONS', 'ATTENDANCE %']],
             body: monthlySummaryData,
             theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
-            bodyStyles: { fontSize: 8, halign: 'center' },
+            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { textColor: [0, 0, 0], fontSize: 8, halign: 'center' },
             columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
             didDrawPage: () => addHeader('Student Attendance Report', undefined, selectedStudentForExport),
             didParseCell: (data) => {
               if (Object.keys(months).length > 1 && data.row.index === monthlySummaryData.length - 1) {
                 data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.fillColor = [241, 245, 249];
+                data.cell.styles.fillColor = [245, 245, 245];
               }
             }
           });
@@ -479,20 +480,17 @@ const AttendancePage = () => {
         });
 
         autoTable(doc, {
-          startY: 55,
-          margin: { top: 55 },
+          startY: 62,
+          margin: { top: 62 },
           head: [['DATE', 'STATUS', 'ARRIVAL TIME']],
           body: tableData,
           theme: 'striped',
-          headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
-          bodyStyles: { fontSize: 8, halign: 'center' },
+          headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+          bodyStyles: { textColor: [0, 0, 0], fontSize: 8, halign: 'center' },
           didDrawPage: () => addHeader(reportTitle, undefined, selectedStudentForExport),
           didParseCell: (data) => {
             if (data.section === 'body' && data.column.index === 1) {
-              const status = data.cell.text[0];
-              if (status === 'PRESENT') data.cell.styles.textColor = [22, 163, 74];
-              if (status === 'LATE') data.cell.styles.textColor = [217, 119, 6];
-              if (status === 'ABSENT') data.cell.styles.textColor = [220, 38, 38];
+              data.cell.styles.textColor = [0, 0, 0];
             }
           }
         });
@@ -517,21 +515,18 @@ const AttendancePage = () => {
           });
 
           autoTable(doc, {
-            startY: 55,
-            margin: { top: 55 },
+            startY: 62,
+            margin: { top: 62 },
             head: [['STUDENT NAME', 'STATUS', 'ARRIVAL TIME']],
             body: tableData,
             theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
-            bodyStyles: { fontSize: 8, halign: 'center' },
+            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { textColor: [0, 0, 0], fontSize: 8, halign: 'center' },
             columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
             didDrawPage: () => addHeader('Daily Attendance Report'),
             didParseCell: (data) => {
               if (data.section === 'body' && data.column.index === 1) {
-                const status = data.cell.text[0];
-                if (status === 'PRESENT') data.cell.styles.textColor = [22, 163, 74];
-                if (status === 'LATE') data.cell.styles.textColor = [217, 119, 6];
-                if (status === 'ABSENT') data.cell.styles.textColor = [220, 38, 38];
+                data.cell.styles.textColor = [0, 0, 0];
               }
             }
           });
@@ -549,13 +544,13 @@ const AttendancePage = () => {
           });
 
           autoTable(doc, {
-            startY: 55,
-            margin: { top: 55 },
+            startY: 62,
+            margin: { top: 62 },
             head: [['STUDENT NAME', 'PRESENT', 'ABSENT', 'TOTAL', 'OVERALL %']],
             body: summaryData,
             theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
-            bodyStyles: { fontSize: 8, halign: 'center' },
+            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { textColor: [0, 0, 0], fontSize: 8, halign: 'center' },
             columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
             didDrawPage: () => addHeader('Class Attendance Summary')
           });
@@ -578,21 +573,18 @@ const AttendancePage = () => {
             });
 
             autoTable(doc, {
-              startY: 55,
-              margin: { top: 55 },
+              startY: 62,
+              margin: { top: 62 },
               head: [headRow],
               body: monthlyMatrixData,
               theme: 'grid',
-              headStyles: { fillColor: [0, 0, 0], fontSize: 7, fontStyle: 'bold', halign: 'center' },
-              bodyStyles: { fontSize: 6, halign: 'center' },
+              headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 7, fontStyle: 'bold', halign: 'center' },
+              bodyStyles: { textColor: [0, 0, 0], fontSize: 6, halign: 'center' },
               columnStyles: { 0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } },
               didDrawPage: () => addHeader('Attendance Matrix', monthName),
               didParseCell: (data) => {
                 if (data.section === 'body' && data.column.index > 0 && data.column.index <= dates.length) {
-                  const status = data.cell.text[0];
-                  if (status === 'A') data.cell.styles.textColor = [220, 38, 38];
-                  if (status === 'L') data.cell.styles.textColor = [217, 119, 6];
-                  if (status === 'P') data.cell.styles.textColor = [22, 163, 74];
+                  data.cell.styles.textColor = [0, 0, 0];
                 }
               }
             });
