@@ -3,8 +3,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, FaChevronRight, FaCamera, FaInfoCircle } from 'react-icons/fa';
+import { 
+  FaCalendarAlt, FaSearch, FaUser, FaFilePdf, FaFileExcel, 
+  FaMapMarkerAlt, FaClock, FaHashtag, FaLayerGroup, 
+  FaChevronRight, FaCamera, FaInfoCircle, FaFilter, FaDownload 
+} from 'react-icons/fa';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import BackButton from '@/components/features/shared/BackButton';
 
 interface ClassDetails {
@@ -45,6 +51,8 @@ interface AttendanceRecord {
   };
 }
 
+type ExportType = 'All' | 'Daily' | 'Weekly' | 'Monthly' | 'Range';
+
 const AttendancePage = () => {
   const router = useRouter();
   const params = useParams();
@@ -55,7 +63,15 @@ const AttendancePage = () => {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Export Settings States
+  const [exportType, setExportType] = useState<ExportType>('All');
   const [selectedStudentForExport, setSelectedStudentForExport] = useState('All');
+  const [exportSpecificDate, setExportSpecificDate] = useState('');
+  const [exportMonth, setExportMonth] = useState('');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+  
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [viewMode, setViewMode] = useState<'logs' | 'roster'>('logs');
@@ -118,16 +134,12 @@ const AttendancePage = () => {
       year: 'numeric',
     });
 
-    // 1. Check if session already exists for today
     if (availableDates.includes(todayStr)) {
       return { isAvailable: false, reason: 'Attendance already recorded for today.' };
     }
 
-    // 2. Check Day
     const dayNames = ['SUN', 'M', 'T', 'W', 'TH', 'F', 'S'];
     const currentDay = dayNames[now.getDay()];
-    
-    // M-SUN means every day
     const isEveryDay = classDetails.days === 'M-SUN';
     const scheduledDays = classDetails.days === 'TTH' ? ['T', 'TH'] : 
                          classDetails.days === 'MWF' ? ['M', 'W', 'F'] : 
@@ -138,11 +150,9 @@ const AttendancePage = () => {
       return { isAvailable: false, reason: `Not scheduled for today (${classDetails.days}).` };
     }
 
-    // 3. Check Time (if not M-SUN)
     if (!isEveryDay) {
       try {
         const [startTimeStr, endTimeStr] = classDetails.time.split(' - ');
-        
         const parseTime = (timeStr: string) => {
           const [time, modifier] = timeStr.split(' ');
           let [hours, minutes] = time.split(':').map(Number);
@@ -152,23 +162,455 @@ const AttendancePage = () => {
           d.setHours(hours, minutes, 0, 0);
           return d;
         };
-
         const startTime = parseTime(startTimeStr);
         const endTime = parseTime(endTimeStr);
-
-        if (now < startTime) {
-          return { isAvailable: false, reason: `Class hasn't started yet (Scheduled: ${classDetails.time}).` };
-        }
-        if (now > endTime) {
-          return { isAvailable: false, reason: `Class has already ended (Scheduled: ${classDetails.time}).` };
-        }
+        if (now < startTime) return { isAvailable: false, reason: `Class hasn't started yet (Scheduled: ${classDetails.time}).` };
+        if (now > endTime) return { isAvailable: false, reason: `Class has already ended (Scheduled: ${classDetails.time}).` };
       } catch (e) {
         console.error('Error parsing time:', e);
       }
     }
-
     return { isAvailable: true, reason: '' };
   }, [classDetails, availableDates]);
+
+  const getFilteredDates = () => {
+    let dates = [...availableDates].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    if (exportType === 'Daily' && exportSpecificDate) {
+      const [y, m, d] = exportSpecificDate.split('-').map(Number);
+      const target = new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+      dates = dates.filter(d => d === target);
+    } else if (exportType === 'Monthly' && exportMonth) {
+      const [year, month] = exportMonth.split('-');
+      dates = dates.filter(d => {
+        const dateObj = new Date(d);
+        return dateObj.getFullYear() === parseInt(year) && (dateObj.getMonth() + 1) === parseInt(month);
+      });
+    } else if (exportType === 'Range' && exportStartDate && exportEndDate) {
+      const [sy, sm, sd] = exportStartDate.split('-').map(Number);
+      const [ey, em, ed] = exportEndDate.split('-').map(Number);
+      const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0).getTime();
+      const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+      
+      dates = dates.filter(d => {
+        const time = new Date(d).getTime();
+        return time >= start && time <= end;
+      });
+    }
+    
+    return dates;
+  };
+
+  const handleExportExcel = async () => {
+    if (!classDetails || !classDetails.students) return;
+    const targetDates = getFilteredDates();
+    if (targetDates.length === 0) {
+      alert('No attendance records found for the selected criteria.');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const res = await fetch(`/api/attendance/${slug}`);
+      if (!res.ok) throw new Error('Failed to fetch attendance data.');
+      const allAttendanceRecords: AttendanceRecord[] = await res.json();
+      
+      const workbook = XLSX.utils.book_new();
+      
+      const getPeriodString = () => {
+        if (exportType === 'Daily') return targetDates[0];
+        if (exportType === 'Monthly' && exportMonth) {
+          const [y, m] = exportMonth.split('-');
+          return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        }
+        if (exportType === 'Range' && exportStartDate && exportEndDate) {
+          return `${exportStartDate} to ${exportEndDate}`;
+        }
+        return `${targetDates[0]} - ${targetDates[targetDates.length - 1]}`;
+      };
+
+      const genDate = new Date().toLocaleString();
+
+      const createMetadataHeader = (reportTitle: string, studentName?: string) => {
+        return [
+          ['VISITRACK ATTENDANCE MANAGEMENT SYSTEM'],
+          [reportTitle.toUpperCase()],
+          [],
+          ['CLASS CODE:', classDetails.code, '', 'INSTRUCTOR:', `${classDetails.teacher.firstName} ${classDetails.teacher.lastName}`],
+          ['PERIOD:', getPeriodString(), '', 'GENERATED:', genDate],
+          studentName ? ['STUDENT:', studentName.toUpperCase()] : [],
+          [],
+        ];
+      };
+
+      const groupByMonth = (dates: string[]) => {
+        return dates.reduce((acc, date) => {
+          const month = new Date(date).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+          if (!acc[month]) acc[month] = [];
+          acc[month].push(date);
+          return acc;
+        }, {} as Record<string, string[]>);
+      };
+
+      const months = groupByMonth(targetDates);
+
+      if (selectedStudentForExport !== 'All') {
+        const student = classDetails.students.find(s => `${s.firstName} ${s.lastName}` === selectedStudentForExport);
+        if (!student) return;
+
+        const header = createMetadataHeader('Student Attendance Report', selectedStudentForExport);
+        const tableHeader = ['DATE', 'STATUS', 'ARRIVAL TIME'];
+        const tableData = targetDates.map(date => {
+          const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+          return [date, record ? record.status.toUpperCase() : 'ABSENT', record ? record.time : '--:--'];
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet([...header, tableHeader, ...tableData]);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance Logs');
+
+        let filename = `${classDetails.code}_${selectedStudentForExport}_Attendance`;
+        if (exportType === 'Daily') filename += `_${exportSpecificDate}`;
+        else if (exportType === 'Monthly') filename += `_${exportMonth}`;
+        else if (exportType === 'Range') filename += `_${exportStartDate}_to_${exportEndDate}`;
+        
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+      } else {
+        // Summary Sheet
+        const summaryHeader = createMetadataHeader('Class Attendance Summary');
+        const summaryTableHeader = ['STUDENT NAME', 'PRESENT', 'ABSENT', 'TOTAL', 'OVERALL %'];
+        const summaryData = classDetails.students.map(student => {
+          let present = 0;
+          targetDates.forEach(date => {
+            const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+            if (record && (record.status === 'Present' || record.status === 'Late')) present++;
+          });
+          const percentage = targetDates.length > 0 ? ((present / targetDates.length) * 100).toFixed(1) : '0.0';
+          return [`${student.firstName} ${student.lastName}`.toUpperCase(), present.toString(), (targetDates.length - present).toString(), targetDates.length.toString(), `${percentage}%`];
+        });
+
+        const summarySheet = XLSX.utils.aoa_to_sheet([...summaryHeader, summaryTableHeader, ...summaryData]);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+        // Monthly Sheets
+        Object.entries(months).forEach(([monthName, dates]) => {
+          const monthlyHeader = createMetadataHeader(`Monthly Matrix - ${monthName}`);
+          const monthlyTableHeader = ['STUDENT NAME', ...dates.map(d => new Date(d).getDate().toString()), 'P', 'A', '%'];
+          const monthlyData = classDetails.students.map(student => {
+            let monthPresent = 0;
+            const dateStatuses = dates.map(date => {
+              const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+              if (record && (record.status === 'Present' || record.status === 'Late')) {
+                monthPresent++;
+                return record.status === 'Late' ? 'L' : 'P';
+              }
+              return 'A';
+            });
+            const percentage = ((monthPresent / dates.length) * 100).toFixed(1);
+            return [`${student.firstName} ${student.lastName}`.toUpperCase(), ...dateStatuses, monthPresent.toString(), (dates.length - monthPresent).toString(), `${percentage}%`];
+          });
+
+          const worksheet = XLSX.utils.aoa_to_sheet([...monthlyHeader, monthlyTableHeader, ...monthlyData]);
+          XLSX.utils.book_append_sheet(workbook, worksheet, monthName.substring(0, 31));
+        });
+
+        let filename = `${classDetails.code}_Attendance_Report`;
+        if (exportType === 'Daily') filename += `_${exportSpecificDate}`;
+        else if (exportType === 'Monthly') filename += `_${exportMonth}`;
+        else if (exportType === 'Range') filename += `_${exportStartDate}_to_${exportEndDate}`;
+        
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+      }
+    } catch (error) {
+      console.error('Excel Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!classDetails || !classDetails.students) return;
+    const targetDates = getFilteredDates();
+    if (targetDates.length === 0) {
+      alert('No attendance records found for the selected criteria.');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const res = await fetch(`/api/attendance/${slug}`);
+      if (!res.ok) throw new Error('Failed to fetch attendance data.');
+      const allAttendanceRecords: AttendanceRecord[] = await res.json();
+      
+      const doc = new jsPDF();
+
+      const getPeriodString = (monthOverride?: string) => {
+        if (monthOverride) return monthOverride;
+        if (exportType === 'Daily') return targetDates[0];
+        if (exportType === 'Monthly' && exportMonth) {
+          const [y, m] = exportMonth.split('-');
+          return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        }
+        if (exportType === 'Range' && exportStartDate && exportEndDate) {
+          const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+          return `${formatDate(exportStartDate)} - ${formatDate(exportEndDate)}`;
+        }
+        if (targetDates.length > 0) {
+          if (targetDates.length === 1) return targetDates[0];
+          return `${targetDates[0]} - ${targetDates[targetDates.length - 1]}`;
+        }
+        return 'N/A';
+      };
+
+      const addHeader = (title: string, monthOverride?: string, studentName?: string) => {
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+        
+        // --- Document Title ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(15, 23, 42); // Slate-900
+        doc.text(title.toUpperCase(), 14, 22);
+        
+        // Subtle divider line
+        doc.setDrawColor(226, 232, 240); // Slate-200
+        doc.setLineWidth(0.5);
+        doc.line(14, 25, pageWidth - 14, 25);
+
+        // --- Metadata Information ---
+        doc.setFontSize(8.5);
+        const leftX = 14;
+        const midX = pageWidth / 2 + 5;
+        
+        const drawMeta = (label: string, value: string, x: number, y: number) => {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(100, 116, 139); // Slate-500
+          doc.text(label, x, y);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(15, 23, 42); // Slate-900
+          doc.text(value.toUpperCase(), x + 24, y);
+        };
+
+        const genDate = new Date().toLocaleString('en-US', { 
+          month: 'short', day: '2-digit', year: 'numeric', 
+          hour: '2-digit', minute: '2-digit', hour12: true 
+        });
+
+        drawMeta('CLASS CODE:', classDetails.code, leftX, 34);
+        drawMeta('INSTRUCTOR:', `${classDetails.teacher.firstName} ${classDetails.teacher.lastName}`, midX, 34);
+        drawMeta('PERIOD:', getPeriodString(monthOverride), leftX, 40);
+        drawMeta('GENERATED:', genDate, midX, 40);
+
+        if (studentName) {
+          drawMeta('STUDENT:', studentName, leftX, 46);
+        }
+
+        // Professional Footer
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184); // Slate-400
+        doc.setDrawColor(226, 232, 240); // Slate-200
+        doc.line(14, pageHeight - 15, pageWidth - 14, pageHeight - 15);
+        doc.text('VISITRACK | SYSTEM-GENERATED REGISTRY REPORT | CONFIDENTIAL', 14, pageHeight - 10);
+        const pageInfo = `PAGE ${doc.getNumberOfPages()}`;
+        doc.text(pageInfo, pageWidth - 14, pageHeight - 10, { align: 'right' });
+        doc.setTextColor(0);
+      };
+
+      const groupByMonth = (dates: string[]) => {
+        return dates.reduce((acc, date) => {
+          const month = new Date(date).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+          if (!acc[month]) acc[month] = [];
+          acc[month].push(date);
+          return acc;
+        }, {} as Record<string, string[]>);
+      };
+      const months = groupByMonth(targetDates);
+
+      if (selectedStudentForExport !== 'All') {
+        const student = classDetails.students.find(s => `${s.firstName} ${s.lastName}` === selectedStudentForExport);
+        if (!student) return;
+
+        const isDaily = exportType === 'Daily';
+
+        if (!isDaily) {
+          let grandPresent = 0;
+          let grandTotal = 0;
+
+          const monthlySummaryData = Object.entries(months).map(([monthName, dates]) => {
+            let present = 0;
+            dates.forEach(date => {
+              const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+              if (record && (record.status === 'Present' || record.status === 'Late')) present++;
+            });
+            grandPresent += present;
+            grandTotal += dates.length;
+            const percentage = ((present / dates.length) * 100).toFixed(1);
+            return [monthName, present.toString(), (dates.length - present).toString(), dates.length.toString(), `${percentage}%`];
+          });
+
+          if (Object.keys(months).length > 1) {
+            const overallPercentage = ((grandPresent / grandTotal) * 100).toFixed(1);
+            monthlySummaryData.push(['TOTAL', grandPresent.toString(), (grandTotal - grandPresent).toString(), grandTotal.toString(), `${overallPercentage}%`]);
+          }
+
+          autoTable(doc, {
+            startY: 55,
+            margin: { top: 55 },
+            head: [['MONTH', 'PRESENT', 'ABSENT', 'SESSIONS', 'ATTENDANCE %']],
+            body: monthlySummaryData,
+            theme: 'striped',
+            headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { fontSize: 8, halign: 'center' },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
+            didDrawPage: () => addHeader('Student Attendance Report', undefined, selectedStudentForExport),
+            didParseCell: (data) => {
+              if (Object.keys(months).length > 1 && data.row.index === monthlySummaryData.length - 1) {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fillColor = [241, 245, 249];
+              }
+            }
+          });
+          doc.addPage();
+        }
+
+        const reportTitle = isDaily ? 'Daily Attendance Log' : 'Detailed Attendance Logs';
+        const tableData = targetDates.map(date => {
+          const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+          return [date, record ? record.status.toUpperCase() : 'ABSENT', record ? record.time : '--:--'];
+        });
+
+        autoTable(doc, {
+          startY: 55,
+          margin: { top: 55 },
+          head: [['DATE', 'STATUS', 'ARRIVAL TIME']],
+          body: tableData,
+          theme: 'striped',
+          headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+          bodyStyles: { fontSize: 8, halign: 'center' },
+          didDrawPage: () => addHeader(reportTitle, undefined, selectedStudentForExport),
+          didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const status = data.cell.text[0];
+              if (status === 'PRESENT') data.cell.styles.textColor = [22, 163, 74];
+              if (status === 'LATE') data.cell.styles.textColor = [217, 119, 6];
+              if (status === 'ABSENT') data.cell.styles.textColor = [220, 38, 38];
+            }
+          }
+        });
+
+        let filename = `${classDetails.code}_${selectedStudentForExport}_Attendance`;
+        if (isDaily) filename += `_${exportSpecificDate}`;
+        else if (exportType === 'Monthly') filename += `_${exportMonth}`;
+        else if (exportType === 'Range') filename += `_${exportStartDate}_to_${exportEndDate}`;
+        
+        doc.save(`${filename}.pdf`);
+      } else {
+        const isDaily = exportType === 'Daily';
+
+        if (isDaily) {
+          const tableData = classDetails.students.map(student => {
+            const record = allAttendanceRecords.find(ar => ar.session.date === targetDates[0] && ar.student.id === student.id);
+            return [
+              `${student.firstName} ${student.lastName}`.toUpperCase(),
+              record ? record.status.toUpperCase() : 'ABSENT',
+              record ? record.time : '--:--'
+            ];
+          });
+
+          autoTable(doc, {
+            startY: 55,
+            margin: { top: 55 },
+            head: [['STUDENT NAME', 'STATUS', 'ARRIVAL TIME']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { fontSize: 8, halign: 'center' },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
+            didDrawPage: () => addHeader('Daily Attendance Report'),
+            didParseCell: (data) => {
+              if (data.section === 'body' && data.column.index === 1) {
+                const status = data.cell.text[0];
+                if (status === 'PRESENT') data.cell.styles.textColor = [22, 163, 74];
+                if (status === 'LATE') data.cell.styles.textColor = [217, 119, 6];
+                if (status === 'ABSENT') data.cell.styles.textColor = [220, 38, 38];
+              }
+            }
+          });
+
+          doc.save(`${classDetails.code}_Full_Attendance_${exportSpecificDate}.pdf`);
+        } else {
+          const summaryData = classDetails.students.map(student => {
+            let present = 0;
+            targetDates.forEach(date => {
+              const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+              if (record && (record.status === 'Present' || record.status === 'Late')) present++;
+            });
+            const percentage = targetDates.length > 0 ? ((present / targetDates.length) * 100).toFixed(1) : '0.0';
+            return [`${student.firstName} ${student.lastName}`.toUpperCase(), present.toString(), (targetDates.length - present).toString(), targetDates.length.toString(), `${percentage}%`];
+          });
+
+          autoTable(doc, {
+            startY: 55,
+            margin: { top: 55 },
+            head: [['STUDENT NAME', 'PRESENT', 'ABSENT', 'TOTAL', 'OVERALL %']],
+            body: summaryData,
+            theme: 'striped',
+            headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { fontSize: 8, halign: 'center' },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
+            didDrawPage: () => addHeader('Class Attendance Summary')
+          });
+
+          Object.entries(months).forEach(([monthName, dates]) => {
+            doc.addPage('a4', 'l');
+            const headRow = ['STUDENT NAME', ...dates.map(d => new Date(d).getDate().toString()), 'P', 'A', '%'];
+            const monthlyMatrixData = classDetails.students.map(student => {
+              let monthPresent = 0;
+              const dateStatuses = dates.map(date => {
+                const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
+                if (record && (record.status === 'Present' || record.status === 'Late')) {
+                  monthPresent++;
+                  return record.status === 'Late' ? 'L' : 'P';
+                }
+                return 'A';
+              });
+              const percentage = ((monthPresent / dates.length) * 100).toFixed(1);
+              return [`${student.firstName} ${student.lastName}`.toUpperCase(), ...dateStatuses, monthPresent.toString(), (dates.length - monthPresent).toString(), `${percentage}%`];
+            });
+
+            autoTable(doc, {
+              startY: 55,
+              margin: { top: 55 },
+              head: [headRow],
+              body: monthlyMatrixData,
+              theme: 'grid',
+              headStyles: { fillColor: [0, 0, 0], fontSize: 7, fontStyle: 'bold', halign: 'center' },
+              bodyStyles: { fontSize: 6, halign: 'center' },
+              columnStyles: { 0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } },
+              didDrawPage: () => addHeader('Attendance Matrix', monthName),
+              didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index > 0 && data.column.index <= dates.length) {
+                  const status = data.cell.text[0];
+                  if (status === 'A') data.cell.styles.textColor = [220, 38, 38];
+                  if (status === 'L') data.cell.styles.textColor = [217, 119, 6];
+                  if (status === 'P') data.cell.styles.textColor = [22, 163, 74];
+                }
+              }
+            });
+          });
+
+          let filename = `${classDetails.code}_Attendance_Summary`;
+          if (exportType === 'Monthly') filename += `_${exportMonth}`;
+          else if (exportType === 'Range') filename += `_${exportStartDate}_to_${exportEndDate}`;
+          
+          doc.save(`${filename}.pdf`);
+        }
+      }
+    } catch (error) {
+      console.error('PDF Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (!classDetails) {
     return (
@@ -187,59 +629,10 @@ const AttendancePage = () => {
     student.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalStudentsInClass = classDetails?.students?.length || 0;
   const presentCount = attendanceRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
   const absentCount = attendanceRecords.filter(r => r.status === 'Absent').length;
   const lateCount = attendanceRecords.filter(r => r.status === 'Late').length;
-
   const currentSessionLocation = attendanceRecords[0]?.session;
-
-  const handleExportExcel = async () => {
-    if (!classDetails || !classDetails.students) return;
-    setIsExporting(true);
-    try {
-      const res = await fetch(`/api/attendance/${slug}`);
-      if (!res.ok) throw new Error('Failed to fetch attendance data.');
-      const allAttendanceRecords: AttendanceRecord[] = await res.json();
-      const workbook = XLSX.utils.book_new();
-
-      if (selectedStudentForExport !== 'All') {
-        const studentToExport = classDetails.students.find(
-          (s) => `${s.firstName} ${s.lastName}` === selectedStudentForExport
-        );
-        if (!studentToExport) return;
-        const studentAttendance = availableDates.map(date => {
-          const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === studentToExport.id);
-          return {
-            'Date': new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
-            'Status': record ? record.status : 'Absent',
-            'Time': record ? record.time : 'N/A',
-          };
-        });
-        const worksheet = XLSX.utils.json_to_sheet(studentAttendance);
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
-        XLSX.writeFile(workbook, `${classDetails.code}_${selectedStudentForExport}_Attendance.xlsx`);
-      } else {
-        const summaryRows = classDetails.students.map(student => {
-          let present = 0;
-          let absent = 0;
-          availableDates.forEach(date => {
-            const record = allAttendanceRecords.find(ar => ar.session.date === date && ar.student.id === student.id);
-            if (record && (record.status === 'Present' || record.status === 'Late')) present++;
-            else absent++;
-          });
-          return { 'Student Name': `${student.firstName} ${student.lastName}`, 'Present': present, 'Absent': absent };
-        });
-        const summaryWorksheet = XLSX.utils.json_to_sheet(summaryRows);
-        XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
-        XLSX.writeFile(workbook, `${classDetails.code}_Attendance_Summary.xlsx`);
-      }
-    } catch (error) {
-      console.error('Export failed:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -262,10 +655,7 @@ const AttendancePage = () => {
             </Link>
           ) : (
             <div className="relative group">
-              <button
-                disabled
-                className="bg-gray-100 text-gray-400 px-5 py-2.5 rounded-xl flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest cursor-not-allowed border border-gray-200"
-              >
+              <button disabled className="bg-gray-100 text-gray-400 px-5 py-2.5 rounded-xl flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest cursor-not-allowed border border-gray-200">
                 <FaCamera size={12} /> Take Attendance
               </button>
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block w-48 bg-gray-900 text-white text-[9px] p-2 rounded-lg shadow-xl z-50 text-center font-bold uppercase tracking-wider">
@@ -274,20 +664,110 @@ const AttendancePage = () => {
               </div>
             </div>
           )}
-          <button
-            onClick={() => console.log('Export PDF')}
-            className="bg-white border border-gray-200 text-black px-5 py-2.5 rounded-xl flex items-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm"
-          >
-            <FaFilePdf size={12} /> Export PDF
-          </button>
-          <button
-            onClick={handleExportExcel}
-            className="bg-black text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-gray-800 transition-all font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-gray-200 disabled:opacity-50"
-            disabled={isExporting}
-          >
-            <FaFileExcel size={12} /> {isExporting ? 'Processing...' : 'Export Excel'}
-          </button>
         </div>
+      </div>
+
+      {/* Simplified Export Configuration Panel */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+          <FaFilter size={12} className="text-gray-400" />
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Export Parameters</h2>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Report Scope</label>
+            <select 
+              value={selectedStudentForExport}
+              onChange={(e) => setSelectedStudentForExport(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-black outline-none appearance-none cursor-pointer"
+            >
+              <option value="All">Full Class Report</option>
+              {classDetails.students.map(s => (
+                <option key={s.id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Temporal Filter</label>
+            <div className="flex gap-1 bg-gray-50 p-1 rounded-xl border border-gray-100">
+              {(['All', 'Daily', 'Monthly', 'Range'] as ExportType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setExportType(type)}
+                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all ${
+                    exportType === type ? 'bg-white text-black shadow-sm border border-gray-100' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+              {exportType === 'Daily' ? 'Select Date' : exportType === 'Monthly' ? 'Select Month' : exportType === 'Range' ? 'Start Date' : 'Filter Status'}
+            </label>
+            {exportType === 'Daily' && (
+              <input type="date" value={exportSpecificDate} onChange={(e) => setExportSpecificDate(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-black outline-none" />
+            )}
+            {exportType === 'Monthly' && (
+              <input type="month" value={exportMonth} onChange={(e) => setExportMonth(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-black outline-none" />
+            )}
+            {exportType === 'Range' && (
+              <input type="date" value={exportStartDate} onChange={(e) => setExportStartDate(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-black outline-none" />
+            )}
+            {exportType === 'All' && (
+              <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-bold text-gray-400 uppercase italic">Archival Scope</div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{exportType === 'Range' ? 'End Date' : 'Registry Export'}</label>
+            {exportType === 'Range' ? (
+              <input type="date" value={exportEndDate} onChange={(e) => setExportEndDate(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-black outline-none" />
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportPdf}
+                  disabled={isExporting}
+                  className="flex-1 bg-white border border-gray-200 text-black py-2 rounded-xl flex items-center justify-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm disabled:opacity-50"
+                >
+                  <FaFilePdf size={10} className="text-black" /> PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  disabled={isExporting}
+                  className="flex-1 bg-white border border-gray-200 text-black py-2 rounded-xl flex items-center justify-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm disabled:opacity-50"
+                >
+                  <FaFileExcel size={10} className="text-black" /> Excel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {exportType === 'Range' && (
+          <div className="px-6 pb-6 flex justify-end">
+            <div className="flex gap-2 w-full md:w-1/2 lg:w-1/4">
+              <button
+                onClick={handleExportPdf}
+                disabled={isExporting}
+                className="flex-1 bg-white border border-gray-200 text-black py-2 rounded-xl flex items-center justify-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm disabled:opacity-50"
+              >
+                <FaFilePdf size={10} className="text-black" /> PDF
+              </button>
+              <button
+                onClick={handleExportExcel}
+                disabled={isExporting}
+                className="flex-1 bg-white border border-gray-200 text-black py-2 rounded-xl flex items-center justify-center gap-2 hover:border-black transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm disabled:opacity-50"
+              >
+                <FaFileExcel size={10} className="text-black" /> Excel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* View Switcher */}
@@ -338,10 +818,9 @@ const AttendancePage = () => {
 
       {viewMode === 'logs' ? (
         <>
-          {/* Analytics Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Enrolled', value: totalStudentsInClass },
+              { label: 'Total Enrolled', value: classDetails.students.length },
               { label: 'Present Today', value: presentCount },
               { label: 'Absent', value: absentCount },
               { label: 'Late', value: lateCount }
@@ -354,7 +833,6 @@ const AttendancePage = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Date Selector Sidebar */}
             <div className="lg:col-span-1 space-y-4">
               <div className="flex items-center px-1 mb-2">
                 <FaCalendarAlt className="mr-2 text-black opacity-30" size={12} />
@@ -384,7 +862,6 @@ const AttendancePage = () => {
               </div>
             </div>
 
-            {/* Attendance Records Table */}
             <div className="lg:col-span-3 space-y-4">
               <div className="flex flex-col items-start gap-4 px-1">
                 <div className="w-full space-y-2">
@@ -468,7 +945,7 @@ const AttendancePage = () => {
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1">
             <h2 className="text-xs font-bold text-black uppercase tracking-widest flex items-center">
-              Officially Enrolled <span className="ml-2 text-gray-400">({totalStudentsInClass} Students)</span>
+              Officially Enrolled <span className="ml-2 text-gray-400">({classDetails.students.length} Students)</span>
             </h2>
             <div className="relative w-full md:w-72">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-black opacity-20" size={12} />
