@@ -51,19 +51,19 @@ def load_known_faces():
 
     print(f"Loading facial data from database: {DB_PATH}")
     all_embeddings = []
-    all_names = []
+    all_ids = []
     
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT s.firstName, fd.thumbnailUrl, s.lastName
+            SELECT s.id, fd.thumbnailUrl, s.firstName, s.lastName
             FROM Student s 
             JOIN FacialData fd ON s.id = fd.studentId
         """)
         rows = cursor.fetchall()
         
-        for firstName, thumbnailUrl, lastName in rows:
+        for student_id, thumbnailUrl, firstName, lastName in rows:
             if not thumbnailUrl:
                 continue
             
@@ -76,8 +76,8 @@ def load_known_faces():
                     if faces:
                         best_face = max(faces, key=lambda x: (x.bbox[2]-x.bbox[0])*(x.bbox[3]-x.bbox[1]))
                         all_embeddings.append(best_face.normed_embedding)
-                        all_names.append(firstName.lower())
-                        print(f"SUCCESS: Learned face for {firstName} {lastName}")
+                        all_ids.append(student_id)
+                        print(f"SUCCESS: Learned face for {firstName} {lastName} ({student_id})")
                     else:
                         print(f"WARNING: No face detected in registration photo for {firstName} {lastName}")
                 else:
@@ -94,16 +94,16 @@ def load_known_faces():
         return None, None
 
     known_embeddings = np.array(all_embeddings)
-    known_names = np.array(all_names)
+    known_ids = np.array(all_ids)
 
     # Save to cache
     try:
         with open(EMBEDDINGS_CACHE, 'wb') as f:
-            pickle.dump((known_embeddings, known_names), f)
+            pickle.dump((known_embeddings, known_ids), f)
     except Exception:
         pass
 
-    return known_embeddings, known_names
+    return known_embeddings, known_ids
 
 # Initial load
 known_embeddings, known_names = load_known_faces()
@@ -123,10 +123,10 @@ async def recognize(file: UploadFile = File(...), allowed_ids: str = Form(None))
     if img is None:
         return {"results": []}
 
-    # Parse allowed_ids (comma-separated student first names from frontend)
+    # Parse allowed_ids (comma-separated student IDs from frontend)
     target_ids = None
     if allowed_ids:
-        target_ids = [id.strip().lower() for id in allowed_ids.split(',')]
+        target_ids = [id.strip() for id in allowed_ids.split(',')]
 
     faces = face_app.get(img)
     results = []
@@ -139,15 +139,15 @@ async def recognize(file: UploadFile = File(...), allowed_ids: str = Form(None))
             best_match_idx = np.argmax(similarities[i])
             best_score = float(similarities[i][best_match_idx])
             
-            matched_name = known_names[best_match_idx]
+            matched_id = known_names[best_match_idx]
             
             # Filter by allowed_ids if provided
             is_allowed = True
             if target_ids is not None:
-                is_allowed = matched_name in target_ids
+                is_allowed = matched_id in target_ids
 
             if is_allowed and best_score >= SIMILARITY_THRESHOLD:
-                name = matched_name.capitalize()
+                name = matched_id # Return the ID
             else:
                 name = "Unknown"
             
@@ -156,6 +156,7 @@ async def recognize(file: UploadFile = File(...), allowed_ids: str = Form(None))
                 "confidence": best_score,
                 "bbox": face.bbox.tolist()
             })
+
     elif faces:
         for face in faces:
             results.append({

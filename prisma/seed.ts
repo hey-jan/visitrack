@@ -131,16 +131,6 @@ async function main() {
       },
     });
     studentMap.set(`${student.firstName} ${student.lastName}`, createdStudent);
-
-    // Add placeholder facial data for first two students
-    if (student.firstName === 'John' || student.firstName === 'Maria') {
-      await prisma.facialData.create({
-        data: {
-          studentId: createdStudent.id,
-          embedding: JSON.stringify(Array.from({ length: 512 }, () => Math.random())),
-        },
-      });
-    }
   }
 
   // Seed Attendance Data for ELDNET1

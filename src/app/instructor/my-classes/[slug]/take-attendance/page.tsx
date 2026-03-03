@@ -117,7 +117,7 @@ const TakeAttendancePage = () => {
         const formData = new FormData();
         formData.append('file', blob, 'capture.jpg');
         
-        const allowedIds = classDetails.students.map(s => s.firstName.toLowerCase()).join(',');
+        const allowedIds = classDetails.students.map(s => s.id).join(',');
         formData.append('allowed_ids', allowedIds);
 
         const recognizeRes = await fetch('http://localhost:8001/recognize', {
@@ -131,11 +131,7 @@ const TakeAttendancePage = () => {
           
           data.results.forEach((result: any) => {
             if (result.name !== "Unknown") {
-              const student = classDetails.students.find(
-                s => `${s.firstName.toLowerCase()}` === result.name.toLowerCase() || 
-                     `${s.firstName.toLowerCase()}_${s.lastName.toLowerCase()}` === result.name.toLowerCase() ||
-                     s.id === result.name
-              );
+              const student = classDetails.students.find(s => s.id === result.name);
               
               if (student) {
                 setDetectedStudents(prev => new Set([...Array.from(prev), student.id]));
@@ -167,18 +163,21 @@ const TakeAttendancePage = () => {
 
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-    if (recognitionResults.length > 0) {
+    if (recognitionResults.length > 0 && classDetails) {
       recognitionResults.forEach(result => {
         const [x1, y1, x2, y2] = result.bbox;
         const width = x2 - x1;
         const height = y2 - y1;
+
+        const student = classDetails.students.find(s => s.id === result.name);
+        const displayName = student ? `${student.firstName} ${student.lastName}` : result.name;
 
         ctx.strokeStyle = result.name === "Unknown" ? '#ef4444' : '#22c55e';
         ctx.lineWidth = 3;
         ctx.strokeRect(x1, y1, width, height);
 
         ctx.fillStyle = result.name === "Unknown" ? '#ef4444' : '#22c55e';
-        const label = `${result.name} (${Math.round(result.confidence * 100)}%)`;
+        const label = `${displayName} (${Math.round(result.confidence * 100)}%)`;
         const textWidth = ctx.measureText(label).width;
         ctx.fillRect(x1, y1 - 25, textWidth + 10, 25);
 
