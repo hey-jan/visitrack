@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VisiTrack: Real-Time Face Recognition Attendance System
 
-## Getting Started
+VisiTrack is a modern, real-time attendance system that integrates a Next.js frontend with a specialized Python-based facial recognition engine.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 1. Quick Start Guide
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This project consists of two main parts that must be running simultaneously:
+1.  **Frontend**: A Next.js application (Port 3000).
+2.  **Face Recognition Service**: A Python FastAPI backend (Port 8001).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### **Running the Next.js Frontend**
+The frontend handles the user interface, student management, and webcam display.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1.  **Open a terminal** at the project root (`C:\visitrack`).
+2.  **Install dependencies**: `npm install`
+3.  **Start the development server**: `npm run dev`
+4.  **Access the app**: [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+### **Running the Face Recognition Service**
+The Python service handles the actual "brain" work of identifying faces.
 
-To learn more about Next.js, take a look at the following resources:
+1.  **Open a NEW terminal**.
+2.  **Navigate to the face recognition directory**: `cd face-recognition`
+3.  **Activate the Virtual Environment**: `.venv\Scripts\activate`
+4.  **Start the Python API**: `python app.py`
+5.  **Access the API**: [http://localhost:8001](http://localhost:8001)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 2. System Architecture & Tech Stack
 
-## Deploy on Vercel
+### **How It Works Together**
+- **Dual-Backend Approach**: Next.js API handles core data and logins, while the Python API handles specialized AI tasks.
+- **Real-Time Recognition Loop**: The frontend captures a webcam frame every 2 seconds and sends it to the Python service (`:8001/recognize`).
+- **Shared Database**: The Python engine reads student embeddings directly from the shared `prisma/dev.db` to identify the person in the frame.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### **Core Technologies**
+| Category | Technology |
+| :--- | :--- |
+| **Frontend** | React 19, Next.js 16, Tailwind CSS 4, TypeScript |
+| **Backend** | Node.js, Next.js API (Serverless), Prisma ORM |
+| **Database** | SQLite (Stored locally as `prisma/dev.db`) |
+| **AI Engine** | Python 3.8+, InsightFace (ArcFace/RetinaFace), ONNX, OpenCV |
+| **Auth** | Custom session-based auth using Bcrypt & HTTP-only cookies |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 3. Recognition Specifics
+
+| Feature | Specification |
+| :--- | :--- |
+| **Model Pack** | `buffalo_l` (L = Large, highest accuracy pack) |
+| **Architecture** | **ResNet50** (50-layer deep neural network backbone) |
+| **Algorithm** | **ArcFace** (State-of-the-art training for facial distance) |
+| **Detection** | **RetinaFace** (SCRFD-10GF model) |
+| **Embedding Size**| 512 Dimensions (Numerical "face fingerprint") |
+| **Similarity Score**| Cosine Similarity (Threshold: 0.50) |
+
+---
+
+## 4. Troubleshooting
+
+- **Database Error**: Ensure you are running the Python service from the `face-recognition` directory.
+- **Port Conflict**: If port 8001 is busy, ensure you don't have another instance of `app.py` running.
+- **Camera Not Loading**: Ensure no other application (like Zoom or Teams) is using your webcam.
