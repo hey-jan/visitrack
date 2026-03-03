@@ -368,11 +368,11 @@ const AttendancePage = () => {
         // --- Document Title ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
-        doc.setTextColor(15, 23, 42); // Slate-900
+        doc.setTextColor(0); // All black
         doc.text(title.toUpperCase(), 14, 22);
         
         // Subtle divider line
-        doc.setDrawColor(226, 232, 240); // Slate-200
+        doc.setDrawColor(0); // All black
         doc.setLineWidth(0.5);
         doc.line(14, 25, pageWidth - 14, 25);
 
@@ -383,10 +383,10 @@ const AttendancePage = () => {
         
         const drawMeta = (label: string, value: string, x: number, y: number) => {
           doc.setFont('helvetica', 'bold');
-          doc.setTextColor(100, 116, 139); // Slate-500
+          doc.setTextColor(0); // All black
           doc.text(label, x, y);
           doc.setFont('helvetica', 'normal');
-          doc.setTextColor(15, 23, 42); // Slate-900
+          doc.setTextColor(0); // All black
           doc.text(value.toUpperCase(), x + 24, y);
         };
 
@@ -406,8 +406,8 @@ const AttendancePage = () => {
 
         // Professional Footer
         doc.setFontSize(7);
-        doc.setTextColor(148, 163, 184); // Slate-400
-        doc.setDrawColor(226, 232, 240); // Slate-200
+        doc.setTextColor(0); // All black
+        doc.setDrawColor(0); // All black
         doc.line(14, pageHeight - 15, pageWidth - 14, pageHeight - 15);
         doc.text('VISITRACK | SYSTEM-GENERATED REGISTRY REPORT | CONFIDENTIAL', 14, pageHeight - 10);
         const pageInfo = `PAGE ${doc.getNumberOfPages()}`;
@@ -490,9 +490,9 @@ const AttendancePage = () => {
           didParseCell: (data) => {
             if (data.section === 'body' && data.column.index === 1) {
               const status = data.cell.text[0];
-              if (status === 'PRESENT') data.cell.styles.textColor = [22, 163, 74];
-              if (status === 'LATE') data.cell.styles.textColor = [217, 119, 6];
-              if (status === 'ABSENT') data.cell.styles.textColor = [220, 38, 38];
+              if (status === 'PRESENT') data.cell.styles.textColor = [0, 0, 0];
+              if (status === 'LATE') data.cell.styles.textColor = [0, 0, 0];
+              if (status === 'ABSENT') data.cell.styles.textColor = [0, 0, 0];
             }
           }
         });
@@ -529,9 +529,9 @@ const AttendancePage = () => {
             didParseCell: (data) => {
               if (data.section === 'body' && data.column.index === 1) {
                 const status = data.cell.text[0];
-                if (status === 'PRESENT') data.cell.styles.textColor = [22, 163, 74];
-                if (status === 'LATE') data.cell.styles.textColor = [217, 119, 6];
-                if (status === 'ABSENT') data.cell.styles.textColor = [220, 38, 38];
+                if (status === 'PRESENT') data.cell.styles.textColor = [0, 0, 0];
+                if (status === 'LATE') data.cell.styles.textColor = [0, 0, 0];
+                if (status === 'ABSENT') data.cell.styles.textColor = [0, 0, 0];
               }
             }
           });
@@ -590,9 +590,9 @@ const AttendancePage = () => {
               didParseCell: (data) => {
                 if (data.section === 'body' && data.column.index > 0 && data.column.index <= dates.length) {
                   const status = data.cell.text[0];
-                  if (status === 'A') data.cell.styles.textColor = [220, 38, 38];
-                  if (status === 'L') data.cell.styles.textColor = [217, 119, 6];
-                  if (status === 'P') data.cell.styles.textColor = [22, 163, 74];
+                  if (status === 'A') data.cell.styles.textColor = [0, 0, 0];
+                  if (status === 'L') data.cell.styles.textColor = [0, 0, 0];
+                  if (status === 'P') data.cell.styles.textColor = [0, 0, 0];
                 }
               }
             });
