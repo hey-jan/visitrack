@@ -3,8 +3,8 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  // We check for both 'FRELEAN' and 'CS-FRELEAN' to be sure
-  const classCodes = ['FRELEAN', 'CS-FRELEAN'];
+  // We check for 'CS-FRELEAN' to be sure
+  const classCodes = ['CS-FRELEAN'];
   
   console.log('--- Attendance Clear Script ---');
 
